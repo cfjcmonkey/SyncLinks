@@ -18,17 +18,40 @@ namespace ExtendRSS.Models
     {
         private HttpClient client = new HttpClient();
         public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
+        private Preference preference;
+        private const string host = "https://api.del.icio.us";
+        int total; //total links
 
-        private string username = "cmonkey";
-        private string password = "20092426";
-        private string host = "https://api.del.icio.us";
-
-        public void SetUsername(string user){
-            username = user;
+        public DeliciousApi() 
+        {
+            preference = LoadPreference();
+            if (preference == null) preference = new Preference();
+            total = 1;
         }
 
-        public void SetPassword(string pass){
-            password = pass;
+        public void SetAccount(string user, string pass)
+        {
+            preference.username = user;
+            preference.password = pass;
+            SavePreference();
+        }
+
+        public Preference LoadPreference()
+        {
+            XmlSerializer ser = new XmlSerializer(typeof(Preference));
+            if (store.FileExists("Config.xml"))
+            {
+                using (var s = store.OpenFile("Config.xml", FileMode.Open, FileAccess.Read, FileShare.Read))
+                    return ((Preference)ser.Deserialize(s));
+            }
+            else return null;
+        }
+
+        public void SavePreference()
+        {
+            XmlSerializer ser = new XmlSerializer(typeof(Preference));
+            using (var s = store.CreateFile("Config.xml"))
+                ser.Serialize(s, preference);
         }
 
         /// <summary>
@@ -89,14 +112,18 @@ namespace ExtendRSS.Models
         /// <summary>
         /// Fetch all bookmarks by date or index range.
         /// </summary>
-        /// <returns></returns>
-        public Task< List<BookmarkItem> > GetAll(){
+        /// <param name="start">从第start个链接开始显示,最低为0</param>
+        /// <param name="count">显示连续的count个链接，最高为100000</param>
+        /// <returns>注意未处理"no bookmarks" 如果链接总数是0,则会抛异常</returns>
+        public Task< List<BookmarkItem> > GetAll(int start = 0, int count = 300){
+            if (start >= total) return new Task<List<BookmarkItem>>(() => { return new List<BookmarkItem>(); });
             return GetAsync(host + "/v1/posts/all").ContinueWith<List<BookmarkItem>>(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
                     if (t.Result.StartsWith("Exception")) return null;
                     XDocument doc = XDocument.Parse(t.Result);
+                    total = Convert.ToInt32(doc.Element("posts").Attribute("total").Value);
                     List<BookmarkItem> result = new List<BookmarkItem>();
                     foreach (XElement node in doc.Descendants("post"))
                     {
@@ -178,7 +205,7 @@ namespace ExtendRSS.Models
             {
                 Uri uri = new Uri(url);
                 HttpClientHandler handler = new HttpClientHandler();
-                handler.Credentials = new NetworkCredential(username, password);
+                handler.Credentials = new NetworkCredential(preference.username, preference.password);
                 HttpClient client = new HttpClient(handler);
                 return client.GetStringAsync(uri).ContinueWith<string>(t =>
                 {

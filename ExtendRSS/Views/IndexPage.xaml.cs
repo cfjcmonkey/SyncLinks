@@ -16,6 +16,7 @@ namespace ExtendRSS.Views
     public partial class IndexPage : PhoneApplicationPage
     {
         ProgressIndicator proIndicator;
+        int count; //已加载的链接数
 
         public IndexPage()
         {
@@ -27,6 +28,7 @@ namespace ExtendRSS.Views
                 IsVisible = false
             };
             SystemTray.SetProgressIndicator(this, proIndicator);
+            Login_Content.Width = Application.Current.Host.Content.ActualWidth;
         }
 
         private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -37,6 +39,7 @@ namespace ExtendRSS.Views
             }
             else if (e.AddedItems[0] == AllViewer)
             {
+                count = 0;
                 ShowAllLinks();
             }
         }
@@ -110,8 +113,7 @@ namespace ExtendRSS.Views
         /// </summary>
         private void Btn_Login_Click(object sender, RoutedEventArgs e)
         {
-            App.deliciousApi.SetUsername(Txt_Username.Text);
-            App.deliciousApi.SetPassword(Txt_Password.Text);
+            App.deliciousApi.SetAccount(Txt_Username.Text, Txt_Password.Password);
             Login_Popup.IsOpen = false;
         }
 
@@ -137,12 +139,15 @@ namespace ExtendRSS.Views
             proIndicator.IsVisible = false;
         }
 
+        /// <summary>
+        /// 从网络加载全部链接
+        /// </summary>
         private void ShowAllLinks()
         {
             proIndicator.IsVisible = true;
             proIndicator.Text = "正在加载书签...";
 
-            App.deliciousApi.GetAll().ContinueWith(t =>
+            App.deliciousApi.GetAll(count, 10).ContinueWith(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
@@ -153,6 +158,10 @@ namespace ExtendRSS.Views
                             //MessageBox.Show("请求失败！检查用户名或密码");
                             Login_Popup.IsOpen = true;
                         }
+                        else if (t.Result.Count == 0)
+                        {
+                            MessageBox.Show("已加载所有的链接.");
+                        }
                         else
                         {
                             AllLinksListBox.Items.Clear();
@@ -160,6 +169,7 @@ namespace ExtendRSS.Views
                             {
                                 AllLinksListBox.Items.Add(GenerateItemUI(item));
                             }
+                            count += t.Result.Count;
                         }
                         proIndicator.IsVisible = false;
                     });
@@ -167,12 +177,17 @@ namespace ExtendRSS.Views
                 else if (t.Status == TaskStatus.Faulted)
                     Dispatcher.BeginInvoke(() =>
                     {
-                        MessageBox.Show("请求失败！检查网络");
+                        MessageBox.Show("请求失败！检查网络或用户名密码");
                         proIndicator.IsVisible = false;
                     });
             });
         }
 
+        /// <summary>
+        /// 根据书签内容生成显示到界面的控件
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>由两个按钮组成的控件，外包一层StackPanel</returns>
         private UIElement GenerateItemUI(BookmarkItem item)
         {
             StackPanel stack = new StackPanel()
@@ -215,9 +230,22 @@ namespace ExtendRSS.Views
             return stack;
         }
 
+        /// <summary>
+        /// 点击设置按钮
+        /// </summary>
         private void ApplicationBarIconButton_Click(object sender, EventArgs e)
         {
             Login_Popup.IsOpen = true;
         }
+
+        protected override void OnBackKeyPress(System.ComponentModel.CancelEventArgs e)
+        {
+            if (Login_Popup.IsOpen)
+            {
+                Login_Popup.IsOpen = false;
+                e.Cancel = true;
+            }
+        }
+
     }
 }

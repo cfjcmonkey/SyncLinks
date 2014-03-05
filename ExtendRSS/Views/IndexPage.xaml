@@ -57,8 +57,8 @@
 
         <!--LayoutRoot 是包含所有页面内容的根网格-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
-        <Popup Name="Login_Popup" HorizontalAlignment="Left" Margin="20,10,20,0">
-            <Grid x:Name="Login_Content" HorizontalAlignment="Center" Margin="10,0">
+        <Popup Name="Login_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Grid x:Name="Login_Content" HorizontalAlignment="Center" Background="Black">
                 <Grid.RowDefinitions >
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -67,20 +67,20 @@
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"  Text="Username" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                    <TextBox x:Name="Txt_Username" Grid.Column="1" Height="70" Width="300"/>
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="账户 : "  VerticalAlignment="Center" Margin="10,0,0,0" FontSize="24"/>
+                    <TextBox x:Name="Txt_Username" Grid.Column="1" Height="70" InputScope="LogOnName"/>
                 </Grid>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"  Text="Password " VerticalAlignment="Center" Margin="10,0,0,0"/>
-                    <TextBox x:Name="Txt_Password" Grid.Column="1" Height="70" Width="300"/>
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="密码 : " VerticalAlignment="Center" Margin="10,0,0,0" FontSize="24"/>                    
+                    <PasswordBox x:Name="Txt_Password" Grid.Column="1" Height="70"/>
                 </Grid>
-                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Orientation="Horizontal">
                     <Button x:Name="Btn_Login" Content="设置" Margin="20,0,70,0" Click="Btn_Login_Click"/>
                     <Button x:Name="Btn_Cancel" Content="取消" Margin="70,0,20,0" Click="Btn_Cancel_Click"/>
                 </StackPanel>
