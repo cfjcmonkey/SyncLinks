@@ -20,7 +20,6 @@ namespace ExtendRSS
         /// <returns>电话应用程序的根框架。</returns>
         public static PhoneApplicationFrame RootFrame { get; private set; }
 
-        public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
         public static DeliciousApi deliciousApi { get { return Api; } }
         static DeliciousApi Api = new DeliciousApi();
 
@@ -31,7 +30,7 @@ namespace ExtendRSS
         {
             // 未捕获的异常的全局处理程序。
             UnhandledException += Application_UnhandledException;
-
+           
             // 标准 XAML 初始化
             InitializeComponent();
 

@@ -38,9 +38,182 @@ namespace ExtendRSS
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
             //Login_Popup.IsOpen = true;
+            OfflineLoad();
             ShowRecent();
+        }
+
+        /// <summary>
+        /// 登陆按钮的响应，登陆成功后显示最近的书签
+        /// </summary>
+        private void Btn_Login_Click(object sender, RoutedEventArgs e)
+        {
+            App.deliciousApi.SetUsername(Txt_Username.Text);
+            App.deliciousApi.SetPassword(Txt_Password.Text);
+            Login_Popup.IsOpen = false;
+
+            //output.Text = "Loading Recent Bookmarks...";
+            ShowRecent();
+        }
+
+        private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Login_Popup.IsOpen = false;
+        }
+        /// <summary>
+        /// 设链接为已读.暂时只记录到本地,不同步到网络.
+        /// </summary>
+        private void SetReaded(BookmarkItem item)
+        {
+            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == false)
+            {
+                string tag = "Readed";
+                string[] sub = item.tag.Split(',');
+                foreach (string s in sub)
+                {
+                    if (s.Trim().Equals("UnReaded") == false) tag += "," + s;
+                }
+                item.tag = tag;
+                App.deliciousApi.SaveLinkItemRecord(item);
 /*
-//            ObservableCollection<BookmarkItem> listbox = new ObservableCollection<BookmarkItem>();
+                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
+                    }
+                    else if (t.Status == TaskStatus.Faulted)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
+                    }
+                });
+ */ 
+            }
+        }
+        /// <summary>
+        /// 设链接为未读.暂时只记录到本地,不同步到网络
+        /// </summary>
+        private void SetUnReaded(BookmarkItem item)
+        {
+            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == true)
+            {
+                string tag = "UnReaded";
+                string[] sub = item.tag.Split(',');
+                foreach (string s in sub)
+                {
+                    if (s.Trim().Equals("Readed") == false) tag += "," + s;
+                }
+                item.tag = tag;
+                App.deliciousApi.SaveLinkItemRecord(item);
+/*
+                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
+                    }
+                    else if (t.Status == TaskStatus.Faulted)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
+                    }
+                });
+ */ 
+            }
+        }
+
+        private void OfflineLoad()
+        {
+            proIndicator.IsVisible = true;
+            proIndicator.Text = "正在加载书签...";
+
+            BookmarkListBox.Items.Clear();
+            foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
+            {
+                BookmarkListBox.Items.Add(GenerateItemUI(item));
+            }
+
+            proIndicator.IsVisible = false;
+        }
+
+        private void ShowRecent()
+        {
+            proIndicator.IsVisible = true;
+            proIndicator.Text = "正在加载书签...";
+
+            //output.Text = "Loading recent bookmarks";
+            App.deliciousApi.GetRecent().ContinueWith(t =>
+            {
+                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (t.Result == null) Login_Popup.IsOpen = true;
+                        else
+                        {
+                            BookmarkListBox.Items.Clear();
+                            foreach (BookmarkItem item in t.Result)
+                            {
+                                BookmarkListBox.Items.Add(GenerateItemUI(item));
+                            }
+//                            BookmarkListBox.ItemsSource = t.Result;
+                        }
+                        //output.Text = "Recent Bookmarks";
+                        proIndicator.IsVisible = false;
+                    });
+                }
+                else if (t.Status == TaskStatus.Faulted)
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        MessageBox.Show("请求失败！检查网络或用户名和密码");
+                        proIndicator.IsVisible = false;
+                    });
+            });
+        }
+
+        private UIElement GenerateItemUI(BookmarkItem item)
+        {
+            StackPanel stack = new StackPanel()
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal
+            };
+            Button b = new Button
+            {
+                Style = (Style)Resources["BookmarkItemButtonStyle"]
+            };
+            b.Tap += (param_sender, param_e) => //点击进入链接
+            {
+                BookmarkItem it = b.DataContext as BookmarkItem;
+                SetReaded(it);
+                NavigationService.Navigate(new Uri(item.href, UriKind.Relative));
+
+                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
+            };
+            b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
+            {
+                BookmarkItem it = b.DataContext as BookmarkItem;
+                if (it.isUnReaded.Equals("0"))
+                {
+                    SetUnReaded(it);
+                    it.isUnReaded = "1";
+                }
+                else
+                {
+                    SetReaded(it);
+                    it.isUnReaded = "0";
+                }
+            };
+            Button a = new Button
+            {
+                Style = (Style)Resources["IsReadItemButtonStyle"]
+            };
+            stack.Children.Add(a);
+            stack.Children.Add(b);
+            stack.DataContext = item;
+            return stack;
+        }
+
+        private void Test()
+        {
+//          ObservableCollection<BookmarkItem> listbox = new ObservableCollection<BookmarkItem>();
             BookmarkItem item = new BookmarkItem();
             item.href = "/Views/BrowserPage.xaml?url=http://www.baidu.com";
             item.description = "baidu";
@@ -96,152 +269,7 @@ namespace ExtendRSS
 //            grid.Children.Add(a);
 //            grid.Children.Add(b);
 //            BookmarkListBox.Items.Add(grid);
- */
         }
-
-        /// <summary>
-        /// 登陆按钮的响应，登陆成功后显示最近的书签
-        /// </summary>
-        private void Btn_Login_Click(object sender, RoutedEventArgs e)
-        {
-            App.deliciousApi.SetUsername(Txt_Username.Text);
-            App.deliciousApi.SetPassword(Txt_Password.Text);
-            Login_Popup.IsOpen = false;
-
-            //output.Text = "Loading Recent Bookmarks...";
-            ShowRecent();
-        }
-
-        private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
-        {
-            Login_Popup.IsOpen = false;
-        }
-
-        private void SetReaded(BookmarkItem item)
-        {
-            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == false)
-            {
-                string tag = "Readed";
-                string[] sub = item.tag.Split(',');
-                foreach (string s in sub)
-                {
-                    if (s.Trim().Equals("UnReaded") == false) tag += "," + s;
-                }
-                item.tag = tag;
-
-                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                {
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
-                    }
-                    else if (t.Status == TaskStatus.Faulted)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                    }
-                });
-            }
-        }
-
-        private void SetUnReaded(BookmarkItem item)
-        {
-            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == true)
-            {
-                string tag = "UnReaded";
-                string[] sub = item.tag.Split(',');
-                foreach (string s in sub)
-                {
-                    if (s.Trim().Equals("Readed") == false) tag += "," + s;
-                }
-                item.tag = tag;
-
-                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                {
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
-                    }
-                    else if (t.Status == TaskStatus.Faulted)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                    }
-
-                });
-            }
-        }
-
-        private void ShowRecent()
-        {
-            proIndicator.IsVisible = true;
-            proIndicator.Text = "正在加载书签...";
-
-            //output.Text = "Loading recent bookmarks";
-            App.deliciousApi.GetRecent().ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (t.Result == null) Login_Popup.IsOpen = true;
-                        else
-                        {
-                            BookmarkListBox.Items.Clear();
-                            foreach (BookmarkItem item in t.Result)
-                            {
-                                StackPanel stack = new StackPanel()
-                                {
-                                    Orientation = System.Windows.Controls.Orientation.Horizontal
-                                };
-                                Button b = new Button
-                                {
-                                    Style = (Style)Resources["BookmarkItemButtonStyle"]
-                                };
-                                b.Tap += (param_sender, param_e) => //点击进入链接
-                                {
-                                    BookmarkItem it = b.DataContext as BookmarkItem;
-                                    SetReaded(it);
-                                    NavigationService.Navigate(new Uri(item.href, UriKind.Relative));
-
-                                    if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
-                                };
-                                b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
-                                {
-                                    BookmarkItem it = b.DataContext as BookmarkItem;
-                                    if (it.isUnReaded.Equals("0"))
-                                    {
-                                        SetUnReaded(it);
-                                        it.isUnReaded = "1";
-                                    }
-                                    else
-                                    {
-                                        SetReaded(it);
-                                        it.isUnReaded = "0";
-                                    }
-                                };
-                                Button a = new Button
-                                {
-                                    Style = (Style)Resources["IsReadItemButtonStyle"]
-                                };
-                                stack.Children.Add(a);
-                                stack.Children.Add(b);
-                                stack.DataContext = item;
-                                BookmarkListBox.Items.Add(stack);
-                            }
-//                            BookmarkListBox.ItemsSource = t.Result;
-                        }
-                        //output.Text = "Recent Bookmarks";
-                        proIndicator.IsVisible = false;
-                    });
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        MessageBox.Show("请求失败！检查网络或用户名和密码");
-                        proIndicator.IsVisible = false;
-                    });
-            });
-        }
-
         // 用于生成本地化 ApplicationBar 的示例代码
         //private void BuildLocalizedApplicationBar()
         //{

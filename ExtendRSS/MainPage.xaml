@@ -19,7 +19,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <StackPanel Background="Transparent">
-                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontSize="30"/>
+                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontSize="24"/>
                             <TextBlock Text="{Binding extended}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800"/>
                             <TextBlock Text="{Binding time}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontWeight="Light" FontSize="14"/>
                         </StackPanel>
@@ -75,7 +75,7 @@
 
         <!--TitlePanel 包含应用程序的名称和页标题-->
         <TextBlock Grid.Row="0" Text="ExtendRSS" Style="{StaticResource PhoneTextNormalStyle}" Margin="12,0"/>
-        <TextBlock Grid.Row="1" x:Name="output" FontSize="36"/>
+        <TextBlock Grid.Row="1" x:Name="output" FontSize="36" Margin="12,0"/>
 
         <!--ContentPanel - 在此处放置其他内容-->
         <Grid x:Name="ContentPanel" Grid.Row="2" HorizontalAlignment="left" >

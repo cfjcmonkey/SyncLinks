@@ -8,13 +8,16 @@ using System.Net.Http;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 using System.Text.RegularExpressions;
+using System.IO.IsolatedStorage;
 
 namespace ExtendRSS.Models
 {
     public class DeliciousApi
     {
         private HttpClient client = new HttpClient();
+        public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
 
         private string username = "cmonkey";
         private string password = "20092426";
@@ -27,7 +30,6 @@ namespace ExtendRSS.Models
         public void SetPassword(string pass){
             password = pass;
         }
-//        Encoding encoding = Encoding.GetEncoding("gb2312");
 
         /// <summary>
         /// Check to see when a user last posted an item.
@@ -57,8 +59,21 @@ namespace ExtendRSS.Models
                         item.extended = node.Attribute("extended").Value;
                         item.tag = node.Attribute("tag").Value;
                         item.time = node.Attribute("time").Value;
-                        if (Regex.IsMatch(item.tag, "\\W?Read\\W?")) item.isUnReaded = "0";
-                        else item.isUnReaded = "1";
+                        if (IsExits(item.href))
+                        {
+                            BookmarkItem pItem = LoadLinkItemRecord(item.href);
+                            item.isUnReaded = pItem.isUnReaded;
+                            if (item.time.Equals(pItem.time) == false)
+                            {
+                                SaveLinkItemRecord(item);
+                            }
+                        }
+                        else
+                        {
+                            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
+                            else item.isUnReaded = "1";
+                            SaveLinkItemRecord(item);
+                        }
                         result.Add(item);
                     }
                     return result;
@@ -91,8 +106,21 @@ namespace ExtendRSS.Models
                         item.extended = node.Attribute("extended").Value;
                         item.tag = node.Attribute("tag").Value;
                         item.time = node.Attribute("time").Value;
-                        if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
-                        else item.isUnReaded = "1";
+                        if (IsExits(item.href))
+                        {
+                            BookmarkItem pItem = LoadLinkItemRecord(item.href); 
+                            item.isUnReaded = pItem.isUnReaded;
+                            if (item.time.Equals(pItem.time) == false)
+                            {
+                                SaveLinkItemRecord(item);
+                            }
+                        }
+                        else
+                        {
+                            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
+                            else item.isUnReaded = "1";
+                            SaveLinkItemRecord(item);
+                        }
                         result.Add(item);
                     }
                     return result;
@@ -106,6 +134,7 @@ namespace ExtendRSS.Models
         }
     /// <summary>
     /// Add a new bookmark.
+    /// *not available! the interface provided is wrong.
     /// </summary>
     /// <param name="url"></param>
     /// <param name="description"></param>
@@ -167,5 +196,45 @@ namespace ExtendRSS.Models
             }
         }
 
+        /// <summary>
+        /// 从本地加载链接记录.
+        /// </summary>
+        /// <returns>目录名为链接的哈希码,所以返回的记录列表为乱序</returns>
+        public List<BookmarkItem> LoadLinkItemsRecord(){
+            List<BookmarkItem> result = new List<BookmarkItem>();
+            XmlSerializer ser = new XmlSerializer(typeof(BookmarkItem));
+            foreach (var i in store.GetDirectoryNames("*"))
+                if (store.FileExists(i + "/BookmarkItemRecord.xml"))
+                    using (var s = store.OpenFile(i + "/BookmarkItemRecord.xml", FileMode.Open, FileAccess.Read, FileShare.Read))
+                        result.Add((BookmarkItem)ser.Deserialize(s));
+            return result;
+        }
+
+        public void SaveLinkItemRecord(BookmarkItem item)
+        {
+            string path = item.href.GetHashCode().ToString();
+            if (store.DirectoryExists(path) == false)
+                store.CreateDirectory(path);
+            XmlSerializer ser = new XmlSerializer(typeof(BookmarkItem));
+            using (var s = store.CreateFile(path + "/BookmarkItemRecord.xml"))
+                ser.Serialize(s, item);
+        }
+
+        public bool IsExits(string url)
+        {
+            return store.DirectoryExists(url.GetHashCode().ToString());
+        }
+
+        public BookmarkItem LoadLinkItemRecord(string url)
+        {
+            string path = url.GetHashCode().ToString();
+            XmlSerializer ser = new XmlSerializer(typeof(BookmarkItem));
+            if (store.FileExists(path + "/BookmarkItemRecord.xml"))
+            {
+                using (var s = store.OpenFile(path + "/BookmarkItemRecord.xml", FileMode.Open, FileAccess.Read, FileShare.Read))
+                    return (BookmarkItem)ser.Deserialize(s);
+            }
+            else return null;
+        }
     }
 }
