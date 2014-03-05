@@ -91,7 +91,7 @@ namespace ExtendRSS.Models
                         item.extended = node.Attribute("extended").Value;
                         item.tag = node.Attribute("tag").Value;
                         item.time = node.Attribute("time").Value;
-                        if (Regex.IsMatch(item.tag, "\\W?UnRead\\W?")) item.isUnReaded = "0";
+                        if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
                         else item.isUnReaded = "1";
                         result.Add(item);
                     }
@@ -110,16 +110,17 @@ namespace ExtendRSS.Models
     /// <param name="url"></param>
     /// <param name="description"></param>
     /// <returns></returns>
-    public Task<string> AddBookmark(string url, string description, string tag){
-            return GetAsync(host + "/v1/posts/add?url=" + url + "&description=" + description + "&tags=" + tag + "&replace=yes").ContinueWith<string>(t =>
+    public Task<string> AddBookmark(BookmarkItem item){
+            return GetAsync(host + "/v1/posts/add?url=" + item.href + 
+                "&description=" + item.description + 
+                "&tags=" + item.tag + 
+                "&extended=" + item.extended +
+                "&replace=yes").ContinueWith<string>(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
                     if (t.Result.StartsWith("Exception")) return null;
-                    XDocument doc = XDocument.Parse(t.Result);
-                    List<BookmarkItem> result = new List<BookmarkItem>();
-                    XElement node = doc.Element("result");
-                    return node.Attribute("code").Value;
+                    return t.Result;
                 }
                 else if (t.Status == TaskStatus.Faulted)
                 {

@@ -13,6 +13,38 @@
     SupportedOrientations="Portrait" Orientation="Portrait"
     shell:SystemTray.IsVisible="True"
     Loaded="PhoneApplicationPage_Loaded">
+    <UserControl.Resources>
+        <Style x:Key="BookmarkItemButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <StackPanel Background="Transparent">
+                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontSize="30"/>
+                            <TextBlock Text="{Binding extended}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800"/>
+                            <TextBlock Text="{Binding time}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontWeight="Light" FontSize="14"/>
+                        </StackPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Margin" Value="3,6,3,6" />
+        </Style>
+
+        <Style x:Key="IsReadItemButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Rectangle Grid.Column="0" Width="10" Stroke="#FF3399FF" StrokeThickness="2">
+                            <Rectangle.Fill>
+                                <SolidColorBrush Color="#FF3399FF" Opacity="{Binding isUnReaded}" />
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Margin" Value="0,6,3,6" />
+        </Style>
+
+    </UserControl.Resources>
 
     <!--LayoutRoot 是包含所有页面内容的根网格-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
@@ -81,7 +113,7 @@
                     </StackPanel>
                 </Grid>
             </Popup>
-
+            
             <ListBox Grid.Row="1" x:Name="BookmarkListBox" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
