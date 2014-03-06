@@ -26,7 +26,7 @@ namespace ExtendRSS.Models
         {
             preference = LoadPreference();
             if (preference == null) preference = new Preference();
-            total = 1;
+            total = -1;
         }
 
         public void SetAccount(string user, string pass)
@@ -64,6 +64,7 @@ namespace ExtendRSS.Models
         
         /// <summary>
         /// Fetch recent bookmarks.
+        /// *old method!
         /// </summary>
         /// <returns>返回书签列表，如果任务失败则返回空列表，如果发生异常则返回null</returns>
         public Task< List<BookmarkItem> > GetRecent(){
@@ -110,14 +111,23 @@ namespace ExtendRSS.Models
         }
 
         /// <summary>
+        /// 判断是否还能获取更多的链接
+        /// </summary>
+        /// <param name="start">已获取的链接数</param>
+        /// <returns>初始时,total=-1,经过一次GetAll请求后置为实际的总链接数</returns>
+        public bool HasMoreLinks(int start)
+        {
+            return total < 0 || start < total;
+        }
+
+        /// <summary>
         /// Fetch all bookmarks by date or index range.
         /// </summary>
         /// <param name="start">从第start个链接开始显示,最低为0</param>
         /// <param name="count">显示连续的count个链接，最高为100000</param>
-        /// <returns>注意未处理"no bookmarks" 如果链接总数是0,则会抛异常</returns>
+        /// <returns>注意未处理"no bookmarks" 需提前判断HasMoreLinks; 如果链接总数是0,则会抛异常</returns>
         public Task< List<BookmarkItem> > GetAll(int start = 0, int count = 300){
-            if (start >= total) return new Task<List<BookmarkItem>>(() => { return new List<BookmarkItem>(); });
-            return GetAsync(host + "/v1/posts/all").ContinueWith<List<BookmarkItem>>(t =>
+            return GetAsync(host + "/v1/posts/all?start=" + start + "&results=" + count).ContinueWith<List<BookmarkItem>>(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
@@ -133,6 +143,7 @@ namespace ExtendRSS.Models
                         item.extended = node.Attribute("extended").Value;
                         item.tag = node.Attribute("tag").Value;
                         item.time = node.Attribute("time").Value;
+                        item.time = item.time.Replace('T', ' ').Replace('Z',' ');                    //may slow down the deal speed, better to use regex
                         if (IsExits(item.href))
                         {
                             BookmarkItem pItem = LoadLinkItemRecord(item.href); 
@@ -154,11 +165,14 @@ namespace ExtendRSS.Models
                 }
                 else if (t.Status == TaskStatus.Faulted)
                 {
-                    //to do
+                    if (t.Exception.InnerException.Message.Contains("401"))
+                        throw new Exception("401 Unauthority error");
+                    else throw t.Exception;
                 }
                 return new List<BookmarkItem>();
             });
         }
+
     /// <summary>
     /// Add a new bookmark.
     /// *not available! the interface provided is wrong.
@@ -185,6 +199,7 @@ namespace ExtendRSS.Models
                 return "";
             });
       }
+
 /* 
 /v1/posts/delete? — Delete an existing bookmark.
 /v1/posts/get? — Get bookmark for a single date, or fetch specific items.
@@ -196,31 +211,28 @@ namespace ExtendRSS.Models
         /// 开始一个异步任务来获取请求内容。
         /// </summary>
         /// <param name="url">请求链接</param>
-        /// <returns>一个异步任务对象，任务完成后可通过其 Result 属性获取返回的字符串内容
-        /// 字符串为空，表明请求失败。
-        /// 字符串以Exception开头，表明请求出现异常，冒号后跟异常信息</returns>
+        /// <returns>一个异步任务对象，任务完成后可通过其 Result 属性获取返回的字符串内容</returns>
         public Task<string> GetAsync(string url)
         {
-            try
+            Uri uri = new Uri(url);
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.Credentials = new NetworkCredential(preference.username, preference.password);
+            HttpClient client = new HttpClient(handler);
+            return client.GetStringAsync(uri).ContinueWith<string>(t =>
             {
-                Uri uri = new Uri(url);
-                HttpClientHandler handler = new HttpClientHandler();
-                handler.Credentials = new NetworkCredential(preference.username, preference.password);
-                HttpClient client = new HttpClient(handler);
-                return client.GetStringAsync(uri).ContinueWith<string>(t =>
+                string result = "";
+                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
-                    string result = "";
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                    {
-                        result = t.Result;
-                    }
-                    return result;
-                });
-            }
-            catch (Exception e)
-            {
-                return new Task<string>(() => { return "Exception :" + e.Message; });
-            }
+                    result = t.Result;
+                }
+                else
+                {
+                    if (t.Exception.InnerException.Message.Contains("401"))
+                        throw new Exception("401 Unauthority error");
+                    else throw t.Exception;
+                }
+                return result;
+            });
         }
 
         /// <summary>

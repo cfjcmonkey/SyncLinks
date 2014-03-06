@@ -33,15 +33,147 @@ namespace ExtendRSS.Views
 
         private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems[0] == HistoryViewer)
+            if (e.AddedItems[0] == UnReadedHistoryViewer)
             {
-                OfflineLoad();
+                OfflineLoad(false);
             }
-            else if (e.AddedItems[0] == AllViewer)
+            else if (e.AddedItems[0] == ReadedHistoryViewer)
+            {
+                OfflineLoad(true);
+            }
+            else if (e.AddedItems[0] == RecentViewer)
             {
                 count = 0;
-                ShowAllLinks();
+                RecentPanel.Children.Clear();
+                ShowRecentLinks();
             }
+        }
+
+        /// <summary>
+        /// 加载本地的链接信息
+        /// </summary>
+        private void OfflineLoad(bool IsReaded)
+        {
+            proIndicator.IsVisible = true;
+            proIndicator.Text = "正在加载书签...";
+
+            if (IsReaded)
+            {
+                ReadedHistoryPanel.Children.Clear();
+                foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
+                {
+                    if (item.isUnReaded == "0")
+                        ReadedHistoryPanel.Children.Add(GenerateItemUI(item));
+                }
+            }
+            else
+            {
+                UnReadedHistoryPanel.Children.Clear();
+                foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
+                {
+                    if (item.isUnReaded == "1")
+                        UnReadedHistoryPanel.Children.Add(GenerateItemUI(item));
+                }
+            }
+            proIndicator.IsVisible = false;
+        }
+
+        /// <summary>
+        /// 加载最近的链接
+        /// 每次加载10个链接，随着向下拉动逐渐增多.
+        /// 用全局变量count记录已加载的链接数
+        /// </summary>
+        private void ShowRecentLinks()
+        {
+            if (App.deliciousApi.HasMoreLinks(count) == false)
+            {
+                MessageBox.Show("已加载所有的链接.");
+                return;
+            }
+
+            proIndicator.IsVisible = true;
+            proIndicator.Text = "正在加载书签...";
+
+            App.deliciousApi.GetAll(count, 10).ContinueWith(t =>
+            {
+                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (t.Result == null)
+                        {
+                            //MessageBox.Show("请求失败！检查用户名或密码");
+                        }
+                        else
+                        {
+                            foreach (BookmarkItem item in t.Result)
+                            {
+                                RecentPanel.Children.Add(GenerateItemUI(item));
+                            }
+                            count += t.Result.Count;
+                        }
+                        proIndicator.IsVisible = false;
+                    });
+                }
+                else if (t.Status == TaskStatus.Faulted)
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (t.Exception.InnerException.Message.Contains("401"))
+                        {
+                            MessageBox.Show("请求失败！检查用户名和密码");
+                            Login_Popup.IsOpen = true;
+                        }
+                        else MessageBox.Show("请求失败！检查网络");
+                        proIndicator.IsVisible = false;
+                    });
+            });
+        }
+
+        /// <summary>
+        /// 根据书签内容生成显示到界面的控件
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>由两个按钮组成的控件，外包一层StackPanel</returns>
+        private UIElement GenerateItemUI(BookmarkItem item)
+        {
+            StackPanel stack = new StackPanel()
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal
+            };
+            Button b = new Button
+            {
+                Style = (Style)Resources["BookmarkItemButtonStyle"]
+            };
+            b.Tap += (param_sender, param_e) => //点击进入链接
+            {
+                BookmarkItem it = b.DataContext as BookmarkItem;
+                SetReaded(it);
+                NavigationService.Navigate(new Uri(item.href, UriKind.Relative));
+
+                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
+            };
+            b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
+            {
+                BookmarkItem it = b.DataContext as BookmarkItem;
+                if (it.isUnReaded.Equals("0"))
+                {
+                    SetUnReaded(it);
+                    it.isUnReaded = "1";
+                }
+                else
+                {
+                    SetReaded(it);
+                    it.isUnReaded = "0";
+                }
+            };
+            Button a = new Button
+            {
+                Style = (Style)Resources["IsReadItemButtonStyle"]
+            };
+            stack.Children.Add(a);
+            stack.Children.Add(b);
+            stack.DataContext = item;
+            return stack;
         }
 
         /// <summary>
@@ -121,115 +253,6 @@ namespace ExtendRSS.Views
         {
             Login_Popup.IsOpen = false;
         }
-
-        /// <summary>
-        /// 加载本地的链接信息
-        /// </summary>
-        private void OfflineLoad()
-        {
-            proIndicator.IsVisible = true;
-            proIndicator.Text = "正在加载书签...";
-
-            HistoryLinksListBox.Items.Clear();
-            foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
-            {
-                HistoryLinksListBox.Items.Add(GenerateItemUI(item));
-            }
-
-            proIndicator.IsVisible = false;
-        }
-
-        /// <summary>
-        /// 从网络加载全部链接
-        /// </summary>
-        private void ShowAllLinks()
-        {
-            proIndicator.IsVisible = true;
-            proIndicator.Text = "正在加载书签...";
-
-            App.deliciousApi.GetAll(count, 10).ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (t.Result == null)
-                        {
-                            //MessageBox.Show("请求失败！检查用户名或密码");
-                            Login_Popup.IsOpen = true;
-                        }
-                        else if (t.Result.Count == 0)
-                        {
-                            MessageBox.Show("已加载所有的链接.");
-                        }
-                        else
-                        {
-                            AllLinksListBox.Items.Clear();
-                            foreach (BookmarkItem item in t.Result)
-                            {
-                                AllLinksListBox.Items.Add(GenerateItemUI(item));
-                            }
-                            count += t.Result.Count;
-                        }
-                        proIndicator.IsVisible = false;
-                    });
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        MessageBox.Show("请求失败！检查网络或用户名密码");
-                        proIndicator.IsVisible = false;
-                    });
-            });
-        }
-
-        /// <summary>
-        /// 根据书签内容生成显示到界面的控件
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>由两个按钮组成的控件，外包一层StackPanel</returns>
-        private UIElement GenerateItemUI(BookmarkItem item)
-        {
-            StackPanel stack = new StackPanel()
-            {
-                Orientation = System.Windows.Controls.Orientation.Horizontal
-            };
-            Button b = new Button
-            {
-                Style = (Style)Resources["BookmarkItemButtonStyle"]
-            };
-            b.Tap += (param_sender, param_e) => //点击进入链接
-            {
-                BookmarkItem it = b.DataContext as BookmarkItem;
-                SetReaded(it);
-                NavigationService.Navigate(new Uri(item.href, UriKind.Relative));
-
-                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
-            };
-            b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
-            {
-                BookmarkItem it = b.DataContext as BookmarkItem;
-                if (it.isUnReaded.Equals("0"))
-                {
-                    SetUnReaded(it);
-                    it.isUnReaded = "1";
-                }
-                else
-                {
-                    SetReaded(it);
-                    it.isUnReaded = "0";
-                }
-            };
-            Button a = new Button
-            {
-                Style = (Style)Resources["IsReadItemButtonStyle"]
-            };
-            stack.Children.Add(a);
-            stack.Children.Add(b);
-            stack.DataContext = item;
-            return stack;
-        }
-
         /// <summary>
         /// 点击设置按钮
         /// </summary>
@@ -245,6 +268,13 @@ namespace ExtendRSS.Views
                 Login_Popup.IsOpen = false;
                 e.Cancel = true;
             }
+        }
+
+        private void RecentPanel_ManipulationCompleted(object sender, System.Windows.Input.ManipulationCompletedEventArgs e)
+        {
+            if (RecentViewerScroller.VerticalOffset + RecentViewerScroller.ViewportHeight >= RecentViewerScroller.ExtentHeight - 600)
+                ShowRecentLinks();
+
         }
 
     }
