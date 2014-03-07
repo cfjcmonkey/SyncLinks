@@ -25,6 +25,9 @@ namespace ExtendRSS
                 IsVisible = false
             };
             SystemTray.SetProgressIndicator(this, proIndicator);
+
+            Btn_PrePage = ApplicationBar.Buttons[0] as ApplicationBarIconButton;
+            Btn_NextPage = ApplicationBar.Buttons[1] as ApplicationBarIconButton;
         }
 
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
@@ -32,6 +35,8 @@ namespace ExtendRSS
             url = NavigationContext.QueryString["url"].ToString();
             url = googleUrl + url;
             webBrowser.Navigate(new Uri(url, UriKind.Absolute));
+            Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
+            Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
         }
 
         private void webBrowser_Navigated(object sender, NavigationEventArgs e)
@@ -67,17 +72,35 @@ namespace ExtendRSS
 
         private void Btn_GoBack_Click(object sender, EventArgs e)
         {
-            if (webBrowser.CanGoBack) webBrowser.GoBack();
+            if (webBrowser.CanGoBack)
+            {
+                webBrowser.GoBack();
+                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
+            }
         }
 
         private void Btn_GoForward_Click(object sender, EventArgs e)
         {
-            if (webBrowser.CanGoForward) webBrowser.GoForward();
+            if (webBrowser.CanGoForward)
+            {
+                webBrowser.GoForward();
+                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
+            }
         }
 
         private void Btn_AddBookmark_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void GestureListener_Flick(object sender, FlickGestureEventArgs e)
+        {
+            if (e.Direction == System.Windows.Controls.Orientation.Horizontal && e.HorizontalVelocity < 0)
+            {
+                string str = url;
+                if (str.StartsWith(googleUrl))str = str.Remove(0, googleUrl.Length);
+                NavigationService.Navigate(new Uri("/Views/NotePage.xaml?url=" + str, UriKind.Relative));
+            }
         }
 
     }

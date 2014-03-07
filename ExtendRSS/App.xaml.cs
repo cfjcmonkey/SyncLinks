@@ -18,8 +18,7 @@ namespace ExtendRSS
         ///提供对电话应用程序的根框架的轻松访问。
         /// </summary>
         /// <returns>电话应用程序的根框架。</returns>
-        public static PhoneApplicationFrame RootFrame { get; private set; }
-
+        public static TransitionFrame RootFrame { get; private set; }
         public static DeliciousApi deliciousApi { get { return Api; } }
         static DeliciousApi Api = new DeliciousApi();
 
@@ -119,7 +118,7 @@ namespace ExtendRSS
 
             // 创建框架但先不将它设置为 RootVisual；这允许初始
             // 屏幕保持活动状态，直到准备呈现应用程序时。
-            RootFrame = new PhoneApplicationFrame();
+            RootFrame = new TransitionFrame();
             RootFrame.Navigated += CompleteInitializePhoneApplication;
 
             // 处理导航故障

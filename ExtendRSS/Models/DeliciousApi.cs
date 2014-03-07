@@ -54,6 +54,25 @@ namespace ExtendRSS.Models
                 ser.Serialize(s, preference);
         }
 
+        public string LoadNote(string url)
+        {
+            string path = url.GetHashCode().ToString();
+            if (store.FileExists(path + "/Note.xml"))
+            {
+                using (var s = new StreamReader(store.OpenFile(path + "/Note.xml", FileMode.Open, FileAccess.Read, FileShare.Read)))
+                    return s.ReadToEnd();
+            }
+            return null;
+        }
+
+        public void SaveNote(string url, string content)
+        {
+            string path = url.GetHashCode().ToString();
+            if (store.DirectoryExists(path) == false)
+                store.CreateDirectory(path);
+            using (var s = new StreamWriter(store.CreateFile(path + "/Note.xml")))
+                    s.Write(content);
+        }
         /// <summary>
         /// Check to see when a user last posted an item.
         /// </summary>

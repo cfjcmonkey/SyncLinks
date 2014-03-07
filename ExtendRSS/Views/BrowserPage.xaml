@@ -6,6 +6,7 @@
     xmlns:shell="clr-namespace:Microsoft.Phone.Shell;assembly=Microsoft.Phone"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:toolkit="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone.Controls.Toolkit"
     FontFamily="{StaticResource PhoneFontFamilyNormal}"
     FontSize="{StaticResource PhoneFontSizeNormal}"
     Foreground="{StaticResource PhoneForegroundBrush}"
@@ -14,18 +15,41 @@
     shell:SystemTray.IsVisible="true"
     Loaded="PhoneApplicationPage_Loaded">
 
+    <toolkit:TransitionService.NavigationInTransition>
+        <toolkit:NavigationInTransition>
+            <toolkit:NavigationInTransition.Backward>
+                <toolkit:SlideTransition Mode="SlideLeftFadeIn" />
+            </toolkit:NavigationInTransition.Backward>
+            <toolkit:NavigationInTransition.Forward>
+                <toolkit:SlideTransition Mode="SlideRightFadeIn" />
+            </toolkit:NavigationInTransition.Forward>
+        </toolkit:NavigationInTransition>
+    </toolkit:TransitionService.NavigationInTransition>
+    <toolkit:TransitionService.NavigationOutTransition>
+        <toolkit:NavigationOutTransition>
+            <toolkit:NavigationOutTransition.Backward>
+                <toolkit:SlideTransition Mode="SlideLeftFadeOut"/>
+            </toolkit:NavigationOutTransition.Backward>
+            <toolkit:NavigationOutTransition.Forward>
+                <toolkit:SlideTransition Mode="SlideLeftFadeOut"/>
+            </toolkit:NavigationOutTransition.Forward>
+        </toolkit:NavigationOutTransition>
+    </toolkit:TransitionService.NavigationOutTransition>
+
+    <toolkit:GestureService.GestureListener>
+        <toolkit:GestureListener Flick="GestureListener_Flick"/>
+    </toolkit:GestureService.GestureListener>
     <phone:WebBrowser x:Name="webBrowser" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Height="741" Width="480" Navigated="webBrowser_Navigated" Navigating="webBrowser_Navigating"/>
 
     <phone:PhoneApplicationPage.ApplicationBar>
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Default">
-            <shell:ApplicationBarIconButton Text="前一页" IconUri="/Assets/back.png" Click="Btn_GoBack_Click" />
+            <shell:ApplicationBarIconButton x:Name="Btn_PrePage" Text="前一页" IconUri="/Assets/back.png" Click="Btn_GoBack_Click" />
 <!--            <shell:ApplicationBarIconButton Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" /> -->
 <!--            <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" /> -->
-            <shell:ApplicationBarIconButton Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
+            <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
             <shell:ApplicationBar.MenuItems>
                 <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="原网页/谷歌转码" Click="Btn_GoogleEncode_Click" />
             </shell:ApplicationBar.MenuItems>
         </shell:ApplicationBar>
-
     </phone:PhoneApplicationPage.ApplicationBar>
 </phone:PhoneApplicationPage>
