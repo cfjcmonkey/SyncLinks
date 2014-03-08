@@ -73,6 +73,7 @@ namespace ExtendRSS.Models
             using (var s = new StreamWriter(store.CreateFile(path + "/Note.xml")))
                     s.Write(content);
         }
+
         /// <summary>
         /// Check to see when a user last posted an item.
         /// </summary>
@@ -80,55 +81,7 @@ namespace ExtendRSS.Models
         public Task<string> GetUpdates(){
             return GetAsync(host + "/v1/posts/update");    
         }
-        
-        /// <summary>
-        /// Fetch recent bookmarks.
-        /// *old method!
-        /// </summary>
-        /// <returns>返回书签列表，如果任务失败则返回空列表，如果发生异常则返回null</returns>
-        public Task< List<BookmarkItem> > GetRecent(){
-            return GetAsync(host + "/v1/posts/recent").ContinueWith<List<BookmarkItem>>(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    if (t.Result.StartsWith("Exception")) return null;
-                    XDocument doc = XDocument.Parse(t.Result);
-                    List<BookmarkItem> result = new List<BookmarkItem>();
-                    foreach (XElement node in doc.Descendants("post"))
-                    {
-                        BookmarkItem item = new BookmarkItem();
-                        item.href = "/Views/BrowserPage.xaml?url=" + node.Attribute("href").Value;
-                        item.description = node.Attribute("description").Value;
-                        item.extended = node.Attribute("extended").Value;
-                        item.tag = node.Attribute("tag").Value;
-                        item.time = node.Attribute("time").Value;
-                        if (IsExits(item.href))
-                        {
-                            BookmarkItem pItem = LoadLinkItemRecord(item.href);
-                            item.isUnReaded = pItem.isUnReaded;
-                            if (item.time.Equals(pItem.time) == false)
-                            {
-                                SaveLinkItemRecord(item);
-                            }
-                        }
-                        else
-                        {
-                            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
-                            else item.isUnReaded = "1";
-                            SaveLinkItemRecord(item);
-                        }
-                        result.Add(item);
-                    }
-                    return result;
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                {
-                    //to do
-                }
-                return new List<BookmarkItem>();
-            });
-        }
-
+  
         /// <summary>
         /// 判断是否还能获取更多的链接
         /// </summary>
@@ -150,16 +103,15 @@ namespace ExtendRSS.Models
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
-                    if (t.Result.StartsWith("Exception")) return null;
                     XDocument doc = XDocument.Parse(t.Result);
                     total = Convert.ToInt32(doc.Element("posts").Attribute("total").Value);
                     List<BookmarkItem> result = new List<BookmarkItem>();
                     foreach (XElement node in doc.Descendants("post"))
                     {
                         BookmarkItem item = new BookmarkItem();
-                        item.href = "/Views/BrowserPage.xaml?url=" + node.Attribute("href").Value;
+                        item.href = node.Attribute("href").Value;
                         item.description = node.Attribute("description").Value;
-                        item.extended = node.Attribute("extended").Value;
+                        item.extended = ContentDecoder(node.Attribute("extended").Value);
                         item.tag = node.Attribute("tag").Value;
                         item.time = node.Attribute("time").Value;
                         item.time = item.time.Replace('T', ' ').Replace('Z',' ');                    //may slow down the deal speed, better to use regex
@@ -194,29 +146,33 @@ namespace ExtendRSS.Models
 
     /// <summary>
     /// Add a new bookmark.
-    /// *not available! the interface provided is wrong.
     /// </summary>
-    /// <param name="url"></param>
-    /// <param name="description"></param>
-    /// <returns></returns>
-    public Task<string> AddBookmark(BookmarkItem item){
-            return GetAsync(host + "/v1/posts/add?url=" + item.href + 
-                "&description=" + item.description + 
-                "&tags=" + item.tag + 
-                "&extended=" + item.extended +
-                "&replace=yes").ContinueWith<string>(t =>
+    /// <returns>添加成功，返回"done";否则返回错误信息</returns>
+    public Task<string> AddBookmark(BookmarkItem it){
+        string extended = ContentEncoder(it.extended);
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            {"url", it.href},
+            {"description", it.description},
+            {"tags", it.tag},
+            {"extended", extended},
+            {"replace", "yes"}
+        };
+        return PostAsync(host + "/v1/posts/add", data).ContinueWith<string>(t =>
+        {
+            if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
             {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    if (t.Result.StartsWith("Exception")) return null;
-                    return t.Result;
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                {
-                    //to do
-                }
-                return "";
-            });
+                if (t.Result.Contains("done")) return "done";                   //这里不靠谱,应该解析提取回应
+                else return t.Result;
+            }
+            else if (t.Status == TaskStatus.Faulted)
+            {
+                if (t.Exception.InnerException.Message.Contains("401"))
+                    throw new Exception("401 Unauthority error");
+                else throw t.Exception;
+            }
+            return "error";
+        });
       }
 
 /* 
@@ -227,7 +183,7 @@ namespace ExtendRSS.Models
 /v1/posts/suggest — Fetch popular, recommended and network tags for a specific url.
 */
         /// <summary>
-        /// 开始一个异步任务来获取请求内容。
+        /// 开始一个异步任务来获取GET请求内容。
         /// </summary>
         /// <param name="url">请求链接</param>
         /// <returns>一个异步任务对象，任务完成后可通过其 Result 属性获取返回的字符串内容</returns>
@@ -252,6 +208,24 @@ namespace ExtendRSS.Models
                 }
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 开始一个异步任务来获取POST请求内容
+        /// </summary>
+        /// <param name="url">请求链接</param>
+        /// <param name="data">发送内容</param>
+        /// <returns>一个异步任务对象，任务完成后可通过其 Result 属性获取返回的字符串内容</returns>
+        public async Task<string> PostAsync(string url, Dictionary<string, string> data)
+        {
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.Credentials = new NetworkCredential(preference.username, preference.password);
+            using (HttpClient client = new HttpClient(handler))
+            {
+                HttpContent content = new FormUrlEncodedContent(data);
+                var result = await client.PostAsync(url, content);
+                return await result.Content.ReadAsStringAsync();
+            }
         }
 
         /// <summary>
@@ -293,6 +267,33 @@ namespace ExtendRSS.Models
                     return (BookmarkItem)ser.Deserialize(s);
             }
             else return null;
+        }
+
+        private string ContentEncoder(string content)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in content)
+            {
+                sb.Append(string.Format("%{0:X}", Convert.ToInt16(c)));
+            }
+            return sb.ToString();
+        }
+
+        private string ContentDecoder(string content)
+        {
+            try
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (string s in content.Split('%'))
+                {
+                    if (string.IsNullOrEmpty(s)) continue;
+                    int p = Convert.ToInt32(s, 16);
+                    sb.Append(char.ConvertFromUtf32(p));
+                }
+                return sb.ToString();
+            }catch(Exception e){
+                return content;
+            }
         }
     }
 }

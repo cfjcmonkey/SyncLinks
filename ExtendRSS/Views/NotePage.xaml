@@ -26,7 +26,7 @@
         </toolkit:NavigationInTransition>
     </toolkit:TransitionService.NavigationInTransition>
     <toolkit:TransitionService.NavigationOutTransition>
-        <toolkit:NavigationOutTransition EndTransition="NavigationOutTransition_EndTransition">
+        <toolkit:NavigationOutTransition BeginTransition="NavigationOutTransition_BeginTransition">
             <toolkit:NavigationOutTransition.Backward>
                 <toolkit:SlideTransition Mode="SlideRightFadeOut" />
             </toolkit:NavigationOutTransition.Backward>
@@ -48,13 +48,13 @@
         </Grid.RowDefinitions>
 
         <!--TitlePanel 包含应用程序的名称和页标题-->
-        <StackPanel Grid.Row="0" Margin="12,10,0,0">
-            <TextBlock Text="笔记" Style="{StaticResource PhoneTextNormalStyle}"/>
+        <StackPanel Grid.Row="0" Margin="0">
+            <TextBlock Text="笔记" Style="{StaticResource PhoneTextNormalStyle}" FontSize="24"/>
         </StackPanel>
 
         <!--ContentPanel - 在此处放置其他内容-->
-        <Grid x:Name="ContentPanel" Grid.Row="1" Margin="12,0,12,0">
-            <TextBox x:Name="Txt_NoteContent"/>
+        <Grid x:Name="ContentPanel" Grid.Row="1" Margin="0">
+            <TextBox x:Name="Txt_NoteContent" Width="480" Height="730"  TextWrapping="Wrap" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
         </Grid>
     </Grid>
 

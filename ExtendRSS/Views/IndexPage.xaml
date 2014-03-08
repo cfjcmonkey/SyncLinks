@@ -18,9 +18,9 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <StackPanel Background="Transparent">
-                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontSize="24"/>
-                            <TextBlock Text="{Binding extended}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800"/>
-                            <TextBlock Text="{Binding time}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="450"  MaxHeight="800" FontWeight="Light" FontSize="14"/>
+                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800" FontSize="24"/>
+<!--                            <TextBlock Text="{Binding extended}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800"/> -->
+                            <TextBlock Text="{Binding time}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800" FontWeight="Light" FontSize="14"/>
                         </StackPanel>
                     </ControlTemplate>
                 </Setter.Value>
@@ -81,7 +81,7 @@
                     <PasswordBox x:Name="Txt_Password" Grid.Column="1" Height="70"/>
                 </Grid>
                 <StackPanel Grid.Row="2" HorizontalAlignment="Center" Orientation="Horizontal">
-                    <Button x:Name="Btn_Login" Content="设置" Margin="20,0,70,0" Click="Btn_Login_Click"/>
+                    <Button x:Name="Btn_Login" Content="确定" Margin="20,0,70,0" Click="Btn_Login_Click"/>
                     <Button x:Name="Btn_Cancel" Content="取消" Margin="70,0,20,0" Click="Btn_Cancel_Click"/>
                 </StackPanel>
             </Grid>

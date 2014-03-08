@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
+using Microsoft.Phone.Tasks;
 
 namespace ExtendRSS
 {
@@ -101,6 +102,13 @@ namespace ExtendRSS
                 if (str.StartsWith(googleUrl))str = str.Remove(0, googleUrl.Length);
                 NavigationService.Navigate(new Uri("/Views/NotePage.xaml?url=" + str, UriKind.Relative));
             }
+        }
+
+        private void AppMenu_IE10_Click(object sender, EventArgs e)
+        {
+            WebBrowserTask webBrowserTask = new WebBrowserTask();            
+            webBrowserTask.Uri = new Uri(url, UriKind.Absolute);
+            webBrowserTask.Show();
         }
 
     }

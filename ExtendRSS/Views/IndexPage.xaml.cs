@@ -148,7 +148,7 @@ namespace ExtendRSS.Views
             {
                 BookmarkItem it = b.DataContext as BookmarkItem;
                 SetReaded(it);
-                NavigationService.Navigate(new Uri(item.href, UriKind.Relative));
+                NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + item.href, UriKind.Relative));
 
                 if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
             };
@@ -192,19 +192,22 @@ namespace ExtendRSS.Views
                 item.isUnReaded = "0";
                 item.tag = tag;
                 App.deliciousApi.SaveLinkItemRecord(item);
-                /*
-                                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                                {
-                                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                                    {
-                                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
-                                    }
-                                    else if (t.Status == TaskStatus.Faulted)
-                                    {
-                                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                                    }
-                                });
-                 */
+
+                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    {
+                        Dispatcher.BeginInvoke(() => {
+                            //if done, do nothing
+                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");    
+                        });
+                    }
+                    else if (t.Status == TaskStatus.Faulted)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
+                    }
+                });
+ 
             }
         }
 
@@ -224,19 +227,22 @@ namespace ExtendRSS.Views
                 item.isUnReaded = "1";
                 item.tag = tag;
                 App.deliciousApi.SaveLinkItemRecord(item);
-                /*
-                                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                                {
-                                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                                    {
-                                        Dispatcher.BeginInvoke(() => { MessageBox.Show("成功"); });
-                                    }
-                                    else if (t.Status == TaskStatus.Faulted)
-                                    {
-                                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                                    }
-                                });
-                 */
+
+                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    {
+                        Dispatcher.BeginInvoke(() =>{
+                            //if done, do nothing
+                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");
+                        });
+                    }
+                    else if (t.Status == TaskStatus.Faulted)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
+                    }
+                });
+
             }
         }
 
