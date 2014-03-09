@@ -28,12 +28,16 @@ namespace ExtendRSS.Models
             if (preference == null) preference = new Preference();
             total = -1;
         }
-
+        /// <summary>
+        /// 重设用户名和密码.
+        /// 由Preference管理本地的存储，因此不用调用SavePreference来保存.
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="pass"></param>
         public void SetAccount(string user, string pass)
         {
-            preference.username = user;
-            preference.password = pass;
-            SavePreference();
+            preference.Username = user;
+            preference.Password = pass;
         }
 
         public Preference LoadPreference()
@@ -191,7 +195,7 @@ namespace ExtendRSS.Models
         {
             Uri uri = new Uri(url);
             HttpClientHandler handler = new HttpClientHandler();
-            handler.Credentials = new NetworkCredential(preference.username, preference.password);
+            handler.Credentials = new NetworkCredential(preference.Username, preference.Password);
             HttpClient client = new HttpClient(handler);
             return client.GetStringAsync(uri).ContinueWith<string>(t =>
             {
@@ -219,7 +223,7 @@ namespace ExtendRSS.Models
         public async Task<string> PostAsync(string url, Dictionary<string, string> data)
         {
             HttpClientHandler handler = new HttpClientHandler();
-            handler.Credentials = new NetworkCredential(preference.username, preference.password);
+            handler.Credentials = new NetworkCredential(preference.Username, preference.Password);
             using (HttpClient client = new HttpClient(handler))
             {
                 HttpContent content = new FormUrlEncodedContent(data);
