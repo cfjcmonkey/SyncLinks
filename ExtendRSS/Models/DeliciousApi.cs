@@ -32,8 +32,6 @@ namespace ExtendRSS.Models
         /// 重设用户名和密码.
         /// 由Preference管理本地的存储，因此不用调用SavePreference来保存.
         /// </summary>
-        /// <param name="user"></param>
-        /// <param name="pass"></param>
         public void SetAccount(string user, string pass)
         {
             preference.Username = user;

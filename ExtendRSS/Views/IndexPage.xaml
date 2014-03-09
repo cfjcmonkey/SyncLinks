@@ -58,32 +58,43 @@
         <!--LayoutRoot 是包含所有页面内容的根网格-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
         <Popup Name="Login_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
-            <Grid x:Name="Login_Content" HorizontalAlignment="Center" Background="Black">
-                <Grid.RowDefinitions >
+            <Grid x:Name="Login_Content" HorizontalAlignment="Center" Margin="0,-250,0,0" Height="500" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Row="0" Background="Black" Opacity="0.8"/>
+                <Grid Grid.Row="1" Background="Black">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="账户 : "  VerticalAlignment="Center" Margin="10,0,0,0" FontSize="24"/>
-                    <TextBox x:Name="Txt_Username" Grid.Column="1" Height="70" InputScope="LogOnName"/>
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="账户 : "  VerticalAlignment="Center" Margin="15,0,0,0" FontSize="24"/>
+                    <TextBox x:Name="Txt_Username" Grid.Column="1" Height="70" InputScope="LogOnName" Margin="0,0,15,0"/>
                 </Grid>
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2" Background="Black">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="密码 : " VerticalAlignment="Center" Margin="10,0,0,0" FontSize="24"/>                    
-                    <PasswordBox x:Name="Txt_Password" Grid.Column="1" Height="70"/>
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="密码 : " VerticalAlignment="Center" Margin="15,0,0,0" FontSize="24"/>                    
+                    <PasswordBox x:Name="Txt_Password" Grid.Column="1" Height="70" Margin="0,0,15,0"/>
                 </Grid>
-                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Orientation="Horizontal">
-                    <Button x:Name="Btn_Login" Content="确定" Margin="20,0,70,0" Click="Btn_Login_Click"/>
-                    <Button x:Name="Btn_Cancel" Content="取消" Margin="70,0,20,0" Click="Btn_Cancel_Click"/>
-                </StackPanel>
+                <Grid Grid.Row="3" Background="Black" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" x:Name="Btn_Login" Content="确定" Margin="40,0,100,0" Click="Btn_Login_Click"/>
+                    <Button Grid.Column="1" x:Name="Btn_Cancel" Content="取消" Margin="100,0,40,0" Click="Btn_Cancel_Click"/>
+                </Grid>
+                <Grid Grid.Row="4" Background="Black" Opacity="0.8"/>
             </Grid>
         </Popup>
         <!--枢轴控件-->
