@@ -4,11 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Collections;
 
 namespace ExtendRSS.Models
 {
-    public class BookmarkItem : INotifyPropertyChanged 
+    public class BookmarkItem : INotifyPropertyChanged, IComparable
     {
+        [XmlIgnore]
+        public static string UNREAD = "UnReaded";
+        [XmlIgnore]
+        public static string READ = "Readed";
+        [XmlIgnore]
+        public static string BLOG = "Blog";
+        [XmlIgnore]
+        public static string STAR = "Star";
+
         public string href { set; get; }
         public string description { set; get; }
         public string extended { set; get; }
@@ -32,6 +43,11 @@ namespace ExtendRSS.Models
             {
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
             }
+        }
+
+        public int CompareTo(Object x)
+        {
+            return -1 * time.CompareTo((x as BookmarkItem).time);
         }
     }
 }

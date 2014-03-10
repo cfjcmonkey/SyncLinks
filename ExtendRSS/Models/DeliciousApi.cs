@@ -14,7 +14,7 @@ using System.IO.IsolatedStorage;
 
 namespace ExtendRSS.Models
 {
-    public class DeliciousApi
+    public class DeliciousAPI
     {
         private HttpClient client = new HttpClient();
         public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
@@ -22,7 +22,7 @@ namespace ExtendRSS.Models
         private const string host = "https://api.del.icio.us";
         int total; //total links
 
-        public DeliciousApi() 
+        public DeliciousAPI() 
         {
             preference = LoadPreference();
             if (preference == null) preference = new Preference();
@@ -91,7 +91,8 @@ namespace ExtendRSS.Models
         /// <returns>初始时,total=-1,经过一次GetAll请求后置为实际的总链接数</returns>
         public bool HasMoreLinks(int start)
         {
-            return total < 0 || start < total;
+            return true;
+//            return total < 0 || start < total;
         }
 
         /// <summary>
@@ -100,8 +101,9 @@ namespace ExtendRSS.Models
         /// <param name="start">从第start个链接开始显示,最低为0</param>
         /// <param name="count">显示连续的count个链接，最高为100000</param>
         /// <returns>注意未处理"no bookmarks" 需提前判断HasMoreLinks; 如果链接总数是0,则会抛异常</returns>
-        public Task< List<BookmarkItem> > GetAll(int start = 0, int count = 300){
-            return GetAsync(host + "/v1/posts/all?start=" + start + "&results=" + count).ContinueWith<List<BookmarkItem>>(t =>
+        /// <remarks>用total判定已经不管用了,需要处理"no bookmarks"</remarks>
+        public Task< List<BookmarkItem> > GetAll(int start = 0, int count = 300, string tag = null){
+            return GetAsync(host + "/v1/posts/all?start=" + start + "&results=" + count + "&tag=" + tag).ContinueWith<List<BookmarkItem>>(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
@@ -234,13 +236,16 @@ namespace ExtendRSS.Models
         /// 从本地加载链接记录.
         /// </summary>
         /// <returns>目录名为链接的哈希码,所以返回的记录列表为乱序</returns>
-        public List<BookmarkItem> LoadLinkItemsRecord(){
-            List<BookmarkItem> result = new List<BookmarkItem>();
+        public SortedSet<BookmarkItem> LoadLinkItemsRecord(){
+            SortedSet<BookmarkItem> result = new SortedSet<BookmarkItem>();
             XmlSerializer ser = new XmlSerializer(typeof(BookmarkItem));
             foreach (var i in store.GetDirectoryNames("*"))
                 if (store.FileExists(i + "/BookmarkItemRecord.xml"))
                     using (var s = store.OpenFile(i + "/BookmarkItemRecord.xml", FileMode.Open, FileAccess.Read, FileShare.Read))
-                        result.Add((BookmarkItem)ser.Deserialize(s));
+                    {
+                        BookmarkItem it = (BookmarkItem)ser.Deserialize(s);
+                        result.Add(it);
+                    }
             return result;
         }
 

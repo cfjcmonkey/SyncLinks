@@ -12,51 +12,11 @@
     Foreground="{StaticResource PhoneForegroundBrush}"
     SupportedOrientations="Portrait"  Orientation="Portrait"
     shell:SystemTray.IsVisible="True">
-    <UserControl.Resources>
-        <Style x:Key="BookmarkItemButtonStyle" TargetType="Button">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <StackPanel Background="Transparent">
-                            <TextBlock Text="{Binding description}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800" FontSize="24"/>
-<!--                            <TextBlock Text="{Binding extended}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800"/> -->
-                            <TextBlock Text="{Binding time}" TextWrapping="Wrap" HorizontalAlignment="Left" Width="440"  MaxHeight="800" FontWeight="Light" FontSize="14"/>
-                        </StackPanel>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Margin" Value="6" />
-        </Style>
 
-        <Style x:Key="IsReadItemButtonStyle" TargetType="Button">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Rectangle Grid.Column="0" Width="10" Stroke="#FF3399FF" StrokeThickness="2">
-                            <Rectangle.Fill>
-                                <SolidColorBrush Color="#FF3399FF" Opacity="{Binding isUnReaded}" />
-                            </Rectangle.Fill>
-                        </Rectangle>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Margin" Value="0,6,3,6" />
-        </Style>
-
-        <Style x:Key="LinkItemListBox" TargetType="ListBox">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBox">
-                        <ListBox ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>        
-
-    </UserControl.Resources>
 
         <!--LayoutRoot 是包含所有页面内容的根网格-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
+        <!--登陆框-->
         <Popup Name="Login_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Grid x:Name="Login_Content" HorizontalAlignment="Center" Margin="0,-250,0,0" Height="500" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
@@ -97,32 +57,19 @@
                 <Grid Grid.Row="4" Background="Black" Opacity="0.8"/>
             </Grid>
         </Popup>
+        
         <!--枢轴控件-->
-        <phone:Pivot Title="ExtendRSS" SelectionChanged="Pivot_SelectionChanged">
-            <phone:PivotItem Name="UnReadedHistoryViewer" Header="未读历史">
-                <ScrollViewer>
-                    <StackPanel x:Name="UnReadedHistoryPanel"/>
-                </ScrollViewer>
-            </phone:PivotItem>
-            <phone:PivotItem Name="ReadedHistoryViewer" Header="已读历史">
-                <ScrollViewer>
-                    <StackPanel x:Name="ReadedHistoryPanel"/>
-                </ScrollViewer>
-            </phone:PivotItem>
-            <phone:PivotItem Name="RecentViewer" Header="最近">
-                <ScrollViewer x:Name="RecentViewerScroller">
-                    <StackPanel x:Name="RecentPanel" ManipulationCompleted="RecentPanel_ManipulationCompleted"/>
-                </ScrollViewer>
-            </phone:PivotItem>
-<!--         <phone:PivotItem Name="AllViewer" Header="全部">
-                <ListBox x:Name="AllLinksListBox" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-            </phone:PivotItem>
--->        </phone:Pivot>
+        <phone:Pivot x:Name="PivotControl" Title="ExtendRSS" SelectionChanged="Pivot_SelectionChanged">
+            <phone:PivotItem Name="UnReadedViewer" Header="未读"/>
+            <phone:PivotItem Name="ReadedViewer" Header="已读"/>
+            <phone:PivotItem Name="RecentViewer" Header="最近"/>
+         </phone:Pivot>
     </Grid>
 
     <phone:PhoneApplicationPage.ApplicationBar>
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Minimized">
-            <shell:ApplicationBarIconButton Text="设置" IconUri="/Assets/feature.settings.png" Click="ApplicationBarIconButton_Click" />
+            <shell:ApplicationBarIconButton Text="设置" IconUri="/Assets/feature.settings.png" Click="AppBarIconButton_Set_Click" />
+            <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="AppBarIconButton_Refresh_Click" />
         </shell:ApplicationBar>
     </phone:PhoneApplicationPage.ApplicationBar>
 </phone:PhoneApplicationPage>

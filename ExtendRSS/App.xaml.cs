@@ -19,8 +19,8 @@ namespace ExtendRSS
         /// </summary>
         /// <returns>电话应用程序的根框架。</returns>
         public static TransitionFrame RootFrame { get; private set; }
-        public static DeliciousApi deliciousApi { get { return Api; } }
-        static DeliciousApi Api = new DeliciousApi();
+        public static DeliciousAPI deliciousApi { get { return Api; } }
+        static DeliciousAPI Api = new DeliciousAPI();
 
         /// <summary>
         /// Application 对象的构造函数。
