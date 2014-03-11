@@ -20,13 +20,11 @@ namespace ExtendRSS.Models
         public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
         private Preference preference;
         private const string host = "https://api.del.icio.us";
-        int total; //total links
 
         public DeliciousAPI() 
         {
             preference = LoadPreference();
             if (preference == null) preference = new Preference();
-            total = -1;
         }
         /// <summary>
         /// 重设用户名和密码.
@@ -83,58 +81,49 @@ namespace ExtendRSS.Models
         public Task<string> GetUpdates(){
             return GetAsync(host + "/v1/posts/update");    
         }
-  
-        /// <summary>
-        /// 判断是否还能获取更多的链接
-        /// </summary>
-        /// <param name="start">已获取的链接数</param>
-        /// <returns>初始时,total=-1,经过一次GetAll请求后置为实际的总链接数</returns>
-        public bool HasMoreLinks(int start)
-        {
-            return true;
-//            return total < 0 || start < total;
-        }
 
         /// <summary>
         /// Fetch all bookmarks by date or index range.
         /// </summary>
         /// <param name="start">从第start个链接开始显示,最低为0</param>
         /// <param name="count">显示连续的count个链接，最高为100000</param>
-        /// <returns>注意未处理"no bookmarks" 需提前判断HasMoreLinks; 如果链接总数是0,则会抛异常</returns>
-        /// <remarks>用total判定已经不管用了,需要处理"no bookmarks"</remarks>
+        /// <returns>返回链接列表;请求异常则抛出,其中特殊处理了权限异常,通常为错误的用户名或密码</returns>
         public Task< List<BookmarkItem> > GetAll(int start = 0, int count = 300, string tag = null){
             return GetAsync(host + "/v1/posts/all?start=" + start + "&results=" + count + "&tag=" + tag).ContinueWith<List<BookmarkItem>>(t =>
             {
                 if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                 {
                     XDocument doc = XDocument.Parse(t.Result);
-                    total = Convert.ToInt32(doc.Element("posts").Attribute("total").Value);
                     List<BookmarkItem> result = new List<BookmarkItem>();
-                    foreach (XElement node in doc.Descendants("post"))
+                    if (doc.Root.Name == "result") return result;
+                    if (doc.Root.Name == "posts")
                     {
-                        BookmarkItem item = new BookmarkItem();
-                        item.href = node.Attribute("href").Value;
-                        item.description = node.Attribute("description").Value;
-                        item.extended = ContentDecoder(node.Attribute("extended").Value);
-                        item.tag = node.Attribute("tag").Value;
-                        item.time = node.Attribute("time").Value;
-                        item.time = item.time.Replace('T', ' ').Replace('Z',' ');                    //may slow down the deal speed, better to use regex
-                        if (IsExits(item.href))
+                        foreach (XElement node in doc.Descendants("post"))
                         {
-                            BookmarkItem pItem = LoadLinkItemRecord(item.href); 
-                            item.isUnReaded = pItem.isUnReaded;
-                            if (item.time.Equals(pItem.time) == false)
+                            BookmarkItem item = new BookmarkItem();
+                            item.href = node.Attribute("href").Value;
+                            item.description = node.Attribute("description").Value;
+                            item.extended = ContentDecoder(node.Attribute("extended").Value);
+                            item.tag = node.Attribute("tag").Value;
+                            item.time = node.Attribute("time").Value;
+                            item.time = item.time.Replace('T', ' ').Replace('Z', ' ');                    //may slow down the deal speed, better to use regex
+                            if (IsExits(item.href))
                             {
+                                BookmarkItem pItem = LoadLinkItemRecord(item.href);
+                                item.isUnReaded = pItem.isUnReaded;
+                                if (item.time.Equals(pItem.time) == false)
+                                {
+                                    SaveLinkItemRecord(item);
+                                }
+                            }
+                            else
+                            {
+                                if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
+                                else item.isUnReaded = "1";
                                 SaveLinkItemRecord(item);
                             }
+                            result.Add(item);
                         }
-                        else
-                        {
-                            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
-                            else item.isUnReaded = "1";
-                            SaveLinkItemRecord(item);
-                        }
-                        result.Add(item);
                     }
                     return result;
                 }
@@ -166,8 +155,8 @@ namespace ExtendRSS.Models
         {
             if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
             {
-                if (t.Result.Contains("done")) return "done";                   //这里不靠谱,应该解析提取回应
-                else return t.Result;
+                XDocument doc = XDocument.Parse(t.Result);
+                return doc.Root.Attribute("code").Value;
             }
             else if (t.Status == TaskStatus.Faulted)
             {

@@ -81,12 +81,6 @@ namespace ExtendRSS.Views
         /// <remarks>当前未读项并不都带有未读tag,因此会漏选未读项</remarks>
         private void LoadRecentLinks(string tag = null)
         {
-            if (App.deliciousApi.HasMoreLinks(count) == false)
-            {
-                MessageBox.Show("已加载所有的链接.");
-                return;
-            }
-
             parent.proIndicator.IsVisible = true;
             parent.proIndicator.Text = "正在加载书签...";
 
@@ -96,15 +90,11 @@ namespace ExtendRSS.Views
                 {
                     Dispatcher.BeginInvoke(() =>
                     {
-                        if (t.Result == null)
-                        {
-                            //MessageBox.Show("请求失败！检查用户名或密码");
-                        }
-                        else
+                        if (t.Result.Count > 0)
                         {
                             OfflineLoad(tag);
                             count += t.Result.Count;
-                        }
+                        }//若返回零条链接,则不做处理.
                         parent.proIndicator.IsVisible = false;
                     });
                 }
@@ -137,15 +127,11 @@ namespace ExtendRSS.Views
                 {
                     Dispatcher.BeginInvoke(() =>
                     {
-                        if (t.Result == null)
-                        {
-                            //MessageBox.Show("请求失败！检查用户名或密码");
-                        }
-                        else
+                        if (t.Result.Count > 0)
                         {
                             OfflineLoad(BookmarkItem.UNREAD);
                             count += t.Result.Count;
-                        }
+                        }//若返回零条链接,则不做处理.
                         parent.proIndicator.IsVisible = false;
                     });
                 }
@@ -222,7 +208,7 @@ namespace ExtendRSS.Views
                 string[] sub = item.tag.Split(',');
                 foreach (string s in sub)
                 {
-                    if (s.Trim().Equals("UnReaded") == false) tag += "," + s;
+                    if (s.Trim().Equals("UnReaded") == false && s.Trim().Equals("Readed") == false) tag += "," + s;
                 }
                 item.isUnReaded = "0";
                 item.tag = tag;
@@ -258,7 +244,7 @@ namespace ExtendRSS.Views
                 string[] sub = item.tag.Split(',');
                 foreach (string s in sub)
                 {
-                    if (s.Trim().Equals("Readed") == false) tag += "," + s;
+                    if (s.Trim().Equals("UnReaded") == false && s.Trim().Equals("Readed") == false) tag += "," + s;
                 }
                 item.isUnReaded = "1";
                 item.tag = tag;
