@@ -1,5 +1,5 @@
-﻿<xapCache source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\ExtendRSS_Debug_AnyCPU.xap" wasSigned="False" certificateThumbprint="" TimeStampUrl="" lastWriteTime="2014/3/11 15:53:16">
-  <file source="E:\project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.dll" archivePath="ExtendRSS.dll" lastWriteTime="2014/3/11 15:53:15" />
+﻿<xapCache source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\ExtendRSS_Debug_AnyCPU.xap" wasSigned="False" certificateThumbprint="" TimeStampUrl="" lastWriteTime="2014/3/12 10:01:33">
+  <file source="E:\project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.dll" archivePath="ExtendRSS.dll" lastWriteTime="2014/3/12 10:01:32" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Assets\add.png" archivePath="Assets\add.png" lastWriteTime="2014/3/6 15:55:18" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Assets\AlignmentGrid.png" archivePath="Assets\AlignmentGrid.png" lastWriteTime="2014/3/6 15:55:18" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Assets\back.png" archivePath="Assets\back.png" lastWriteTime="2014/3/6 15:55:18" />
@@ -18,7 +18,7 @@
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Toolkit.Content\ApplicationBar.Check.png" archivePath="Toolkit.Content\ApplicationBar.Check.png" lastWriteTime="2014/3/7 9:30:37" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Toolkit.Content\ApplicationBar.Delete.png" archivePath="Toolkit.Content\ApplicationBar.Delete.png" lastWriteTime="2014/3/7 9:30:37" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Toolkit.Content\ApplicationBar.Select.png" archivePath="Toolkit.Content\ApplicationBar.Select.png" lastWriteTime="2014/3/7 9:30:37" />
-  <file source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\AppManifest.xaml" archivePath="AppManifest.xaml" lastWriteTime="2014/3/11 15:53:12" />
+  <file source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\AppManifest.xaml" archivePath="AppManifest.xaml" lastWriteTime="2014/3/12 9:59:08" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\Assets\ApplicationIcon.png" archivePath="Assets\ApplicationIcon.png" lastWriteTime="2014/3/6 15:55:18" />
   <file source="E:\project\WP8\SyncLinks\ExtendRSS\Bin\Debug\Assets\Tiles\FlipCycleTileMedium.png" archivePath="Assets\Tiles\FlipCycleTileMedium.png" lastWriteTime="2014/3/6 15:55:18" />
   <file source="C:\Program Files (x86)\Microsoft SDKs\Windows Phone\v8.0\Libraries\Microsoft.Phone.Controls.dll" archivePath="Microsoft.Phone.Controls.dll" lastWriteTime="2012/9/26 14:30:38" />

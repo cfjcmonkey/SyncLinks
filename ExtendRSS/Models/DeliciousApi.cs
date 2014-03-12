@@ -270,7 +270,7 @@ namespace ExtendRSS.Models
             StringBuilder sb = new StringBuilder();
             foreach (char c in content)
             {
-                sb.Append(string.Format("%{0:X}", Convert.ToInt16(c)));
+                sb.Append(string.Format("%{0:X}", Convert.ToInt32(c)));
             }
             return sb.ToString();
         }
@@ -283,7 +283,7 @@ namespace ExtendRSS.Models
                 foreach (string s in content.Split('%'))
                 {
                     if (string.IsNullOrEmpty(s)) continue;
-                    int p = Convert.ToInt32(s, 16);
+                    int p = Convert.ToInt32(s, 32);
                     sb.Append(char.ConvertFromUtf32(p));
                 }
                 return sb.ToString();
