@@ -47,6 +47,11 @@ namespace ExtendRSS.Views
                 if (RecentViewer.Content != null) return;
                 RecentViewer.Content = new LinkListControl(this);
             }
+            else if (e.AddedItems[0] == StarViewer)
+            {
+                if (StarViewer.Content != null) return;
+                StarViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.STAR };
+            }
         }
 
         /// <summary>

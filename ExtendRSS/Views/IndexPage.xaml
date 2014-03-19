@@ -63,7 +63,8 @@
             <phone:PivotItem Name="UnReadedViewer" Header="未读"/>
             <phone:PivotItem Name="ReadedViewer" Header="已读"/>
             <phone:PivotItem Name="RecentViewer" Header="最近"/>
-         </phone:Pivot>
+            <phone:PivotItem Name="StarViewer" Header="收藏" />
+        </phone:Pivot>
     </Grid>
 
     <phone:PhoneApplicationPage.ApplicationBar>

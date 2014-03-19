@@ -173,6 +173,26 @@ namespace ExtendRSS.Views
 
                 if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
             };
+            ContextMenu contextmenu = new ContextMenu();
+            MenuItem mark = new MenuItem(){ Header = "标记为已读/未读" };
+            mark.Tap += (s, e) =>
+            {
+                BookmarkItem mitem = (s as MenuItem).DataContext as BookmarkItem;
+                if (mitem.isUnReaded == "1") SetReaded(mitem);
+                else SetUnReaded(mitem);
+            };
+
+            MenuItem star = new MenuItem(){ Header = "收藏" };
+            star.Tap += (s, e) =>
+            {
+                BookmarkItem sitem = (s as MenuItem).DataContext as BookmarkItem;
+                SetStared(sitem);
+            };
+
+            contextmenu.Items.Add(mark);
+            contextmenu.Items.Add(star);
+            ContextMenuService.SetContextMenu(stack, contextmenu);
+/*
             b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
             {
                 BookmarkItem it = b.DataContext as BookmarkItem;
@@ -187,6 +207,7 @@ namespace ExtendRSS.Views
                     it.isUnReaded = "0";
                 }
             };
+ */ 
             Button a = new Button
             {
                 Style = (Style)Resources["IsReadItemButtonStyle"]
@@ -248,6 +269,32 @@ namespace ExtendRSS.Views
                 }
                 item.isUnReaded = "1";
                 item.tag = tag;
+                App.deliciousApi.SaveLinkItemRecord(item);
+
+                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            //if done, do nothing
+                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");
+                        });
+                    }
+                    else if (t.Status == TaskStatus.Faulted)
+                    {
+                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
+                    }
+                });
+
+            }
+        }
+
+        private void SetStared(BookmarkItem item)
+        {
+            if (Regex.IsMatch(item.tag, "\\W?Star\\W?") == false)
+            {
+                item.tag += ",Star";
                 App.deliciousApi.SaveLinkItemRecord(item);
 
                 App.deliciousApi.AddBookmark(item).ContinueWith(t =>

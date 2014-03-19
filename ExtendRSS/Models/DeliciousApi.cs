@@ -283,7 +283,7 @@ namespace ExtendRSS.Models
                 foreach (string s in content.Split('%'))
                 {
                     if (string.IsNullOrEmpty(s)) continue;
-                    int p = Convert.ToInt32(s, 32);
+                    int p = Convert.ToInt32(s, 16);
                     sb.Append(char.ConvertFromUtf32(p));
                 }
                 return sb.ToString();

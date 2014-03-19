@@ -9,6 +9,7 @@
     FontSize="{StaticResource PhoneFontSizeNormal}"
     Foreground="{StaticResource PhoneForegroundBrush}"
     d:DesignHeight="480" d:DesignWidth="480"
+    toolkit:TiltEffect.IsTiltEnabled="True"
     Loaded="UserControl_Loaded">
     <UserControl.Resources>
         <Style x:Key="BookmarkItemButtonStyle" TargetType="Button">

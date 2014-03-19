@@ -148,3 +148,4 @@ D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.csproj.GenerateResource.C
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.dll
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.pdb
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\XapCacheFile.xml
+D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.csprojResolveAssemblyReference.cache
