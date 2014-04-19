@@ -61,9 +61,9 @@
         <!--枢轴控件-->
         <phone:Pivot x:Name="PivotControl" Title="ExtendRSS" SelectionChanged="Pivot_SelectionChanged">
             <phone:PivotItem Name="UnReadedViewer" Header="未读"/>
-            <phone:PivotItem Name="ReadedViewer" Header="已读"/>
-            <phone:PivotItem Name="RecentViewer" Header="最近"/>
             <phone:PivotItem Name="StarViewer" Header="收藏" />
+            <phone:PivotItem Name="RecentViewer" Header="最近"/>
+            <phone:PivotItem Name="ReadedViewer" Header="已读"/>
         </phone:Pivot>
     </Grid>
 

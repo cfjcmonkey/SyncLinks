@@ -48,7 +48,7 @@
 <!--            <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" /> -->
             <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
             <shell:ApplicationBar.MenuItems>
-                <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="原网页/谷歌转码" Click="Btn_GoogleEncode_Click" />
+                <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="谷歌转码/百度转码/原网页" Click="Btn_GoogleEncode_Click" />
                 <shell:ApplicationBarMenuItem x:Name="AppMenu_IE10" Text="用IE打开" Click="AppMenu_IE10_Click"/>                
             </shell:ApplicationBar.MenuItems>
         </shell:ApplicationBar>

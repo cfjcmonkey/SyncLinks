@@ -15,11 +15,11 @@ namespace ExtendRSS
     {
         private string url;
         string googleUrl = "http://google.com/gwt/x?noimg=1&u=";
+        string baiduUrl = "http://gate.baidu.com/tc?from=opentc&src=";
         ProgressIndicator proIndicator;
         public BrowserPage()
         {
             InitializeComponent();
-
             proIndicator = new ProgressIndicator()
             {
                 IsIndeterminate = true,
@@ -43,6 +43,8 @@ namespace ExtendRSS
         private void webBrowser_Navigated(object sender, NavigationEventArgs e)
         {
             proIndicator.IsVisible = false;
+            Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
+            Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
         }
 
         private void webBrowser_Navigating(object sender, NavigatingEventArgs e)
@@ -53,15 +55,20 @@ namespace ExtendRSS
 
         private void Btn_GoogleEncode_Click(object sender, EventArgs e)
         {
-            if (url.StartsWith(googleUrl) == false)
+            if (url.StartsWith(googleUrl) == true)
             {
-                url = googleUrl + url;
+                url = url.Remove(0, googleUrl.Length);
+                url = baiduUrl + url;
 //                AppMenu_GoogleTrans.Text = "加载原网页";
+            }
+            else if (url.StartsWith(baiduUrl) == true)
+            {
+                url = url.Remove(0, baiduUrl.Length);
+                //                AppMenu_GoogleTrans.Text = "谷歌转码"; //引用为空的报错
             }
             else
             {
-                url = url.Remove(0, googleUrl.Length);
-//                AppMenu_GoogleTrans.Text = "谷歌转码"; //引用为空的报错
+                url = googleUrl + url;
             }
             webBrowser.Navigate(new Uri(url));
         }
@@ -77,6 +84,7 @@ namespace ExtendRSS
             {
                 webBrowser.GoBack();
                 Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
+                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
             }
         }
 
@@ -85,6 +93,7 @@ namespace ExtendRSS
             if (webBrowser.CanGoForward)
             {
                 webBrowser.GoForward();
+                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
                 Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
             }
         }
@@ -100,6 +109,7 @@ namespace ExtendRSS
             {
                 string str = url;
                 if (str.StartsWith(googleUrl))str = str.Remove(0, googleUrl.Length);
+                if (str.StartsWith(baiduUrl)) str = str.Remove(0, baiduUrl.Length);
                 NavigationService.Navigate(new Uri("/Views/NotePage.xaml?url=" + str, UriKind.Relative));
             }
         }
@@ -111,5 +121,15 @@ namespace ExtendRSS
             webBrowserTask.Show();
         }
 
+        protected override void OnBackKeyPress(System.ComponentModel.CancelEventArgs e)
+        {
+            if (webBrowser.CanGoBack)
+            {
+                webBrowser.GoBack();
+                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
+                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
+                e.Cancel = true;
+            }
+        }
     }
 }
