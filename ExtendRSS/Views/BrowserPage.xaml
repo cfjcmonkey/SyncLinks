@@ -39,13 +39,45 @@
     <toolkit:GestureService.GestureListener>
         <toolkit:GestureListener Flick="GestureListener_Flick"/>
     </toolkit:GestureService.GestureListener>
-    <phone:WebBrowser x:Name="webBrowser" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Height="741" Width="480" Navigated="webBrowser_Navigated" Navigating="webBrowser_Navigating"/>
+    <Grid>
+        <phone:WebBrowser x:Name="webBrowser" HorizontalAlignment="Left" VerticalAlignment="Top" Height="696" Width="480" Navigated="webBrowser_Navigated" Navigating="webBrowser_Navigating"/>
 
+        <Popup Name="AddBookmark_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Grid x:Name="TitleContent" HorizontalAlignment="Center" Margin="0,-250,0,0" Height="500" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Row="0" Background="Black" Opacity="0.8"/>
+                <Grid Grid.Row="1" Background="Black">
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="标题"  HorizontalAlignment="Center" Margin="15,0,0,0" FontSize="36"/>
+                </Grid>
+                <Grid Grid.Row="2" Background="Black">
+                    <TextBox x:Name="Txt_Title" HorizontalAlignment="Center" Height="70" Width="472"/>
+                </Grid>
+                <Grid Grid.Row="3" Background="Black" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" x:Name="Btn_OK" Content="确定" Margin="40,0,100,0" Click="Btn_OK_Click"/>
+                    <Button Grid.Column="1" x:Name="Btn_Cancel" Content="取消" Margin="100,0,40,0" Click="Btn_Cancel_Click"/>
+                </Grid>
+                <Grid Grid.Row="4" Background="Black" Opacity="0.8"/>
+            </Grid>
+        </Popup>
+    </Grid>
     <phone:PhoneApplicationPage.ApplicationBar>
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Default">
             <shell:ApplicationBarIconButton x:Name="Btn_PrePage" Text="前一页" IconUri="/Assets/back.png" Click="Btn_GoBack_Click" />
-<!--            <shell:ApplicationBarIconButton Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" /> -->
-<!--            <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" /> -->
+            <shell:ApplicationBarIconButton Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" />
+            <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" />
             <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
             <shell:ApplicationBar.MenuItems>
                 <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="谷歌转码/百度转码/原网页" Click="Btn_GoogleEncode_Click" />

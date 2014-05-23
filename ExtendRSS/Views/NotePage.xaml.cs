@@ -27,7 +27,7 @@ namespace ExtendRSS.Views
             string text = App.deliciousApi.LoadNote(url);
 //            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
 //            string text = item.extended;
-//            if (text == null || text.Length == 0) text = url + "\n\n";
+            if (text == null || text.Length == 0) text = url + "\n\n";
             Txt_NoteContent.Text = text;
             Txt_NoteContent.Focus();
         }

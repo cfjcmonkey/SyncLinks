@@ -20,11 +20,13 @@ namespace ExtendRSS.Views
         private void SetAccount_Click(object sender, RoutedEventArgs e)
         {
             App.deliciousApi.SetAccount(Txt_Username.Text, Txt_Password.Password);
+            MessageBox.Show("完成.");
         }
 
         private void ClearCache_Click(object sender, RoutedEventArgs e)
         {
             App.deliciousApi.ClearStorage();
+            MessageBox.Show("完成.");
         }
     }
 }

@@ -139,6 +139,7 @@ D:\Project\WP8\SyncLinks\ExtendRSS\Bin\Debug\zh-CN\Microsoft.Phone.Controls.Tool
 D:\Project\WP8\SyncLinks\ExtendRSS\Bin\Debug\zh-TW\Microsoft.Phone.Controls.Toolkit.resources.dll
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\App.g.cs
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\BrowserPage.g.cs
+D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\ConfigPage.g.cs
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\IndexPage.g.cs
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\LinkListControl.g.cs
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\NotePage.g.cs
@@ -148,5 +149,3 @@ D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.csproj.GenerateResource.C
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.dll
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.pdb
 D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\XapCacheFile.xml
-D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\ExtendRSS.csprojResolveAssemblyReference.cache
-D:\Project\WP8\SyncLinks\ExtendRSS\obj\Debug\Views\ConfigPage.g.cs
