@@ -34,22 +34,22 @@ namespace ExtendRSS.Views
         {
             if (e.AddedItems[0] == UnReadedViewer)
             {
-                if (UnReadedViewer.Content != null) return;
+                if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).LocalRefresh();
                 UnReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.UNREAD };
             }
             else if (e.AddedItems[0] == ReadedViewer)
             {
-                if (ReadedViewer.Content != null) return;
+                if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).LocalRefresh();
                 ReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.READ };
             }
             else if (e.AddedItems[0] == RecentViewer)
             {
-                if (RecentViewer.Content != null) return;
+                if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
                 RecentViewer.Content = new LinkListControl(this);
             }
             else if (e.AddedItems[0] == StarViewer)
             {
-                if (StarViewer.Content != null) return;
+                if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).LocalRefresh();
                 StarViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.STAR };
             }
         }

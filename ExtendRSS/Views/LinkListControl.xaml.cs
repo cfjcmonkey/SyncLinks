@@ -35,6 +35,11 @@ namespace ExtendRSS.Views
             else LoadRecentLinks(StatusTag);
         }
 
+        public void LocalRefresh()
+        {
+            OfflineLoad(StatusTag);
+        }
+
         /// <summary>
         /// 加载本地的链接信息
         /// </summary>
@@ -56,7 +61,7 @@ namespace ExtendRSS.Views
             {   //只要不包含已读tag的都是未读
                 foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
                 {
-                    if (!Regex.IsMatch(item.tag, "\\W?" + BookmarkItem.READ + "\\W?"))
+                    if (!Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)"))
                         ContentPanel.Children.Add(GenerateItemUI(item));
                 }
             }
@@ -64,7 +69,7 @@ namespace ExtendRSS.Views
             {
                 foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
                 {
-                    if (Regex.IsMatch(item.tag, "\\W?" + tag + "\\W?"))
+                    if (Regex.IsMatch(item.tag, "(^|\\W)" + tag + "($|\\W)"))
                         ContentPanel.Children.Add(GenerateItemUI(item));
                 }
             }
@@ -223,13 +228,15 @@ namespace ExtendRSS.Views
         /// </summary>
         private void SetReaded(BookmarkItem item)
         {
-            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == false || item.isUnReaded == "1")
+            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == false || item.isUnReaded == "1")
             {
-                string tag = "Readed";
-                string[] sub = item.tag.Split(',');
+                string tag = BookmarkItem.READ;
+                char[] sp = { ',', ' ' };
+                string[] sub = item.tag.Split(sp, 2);
                 foreach (string s in sub)
                 {
-                    if (s.Trim().Equals("UnReaded") == false && s.Trim().Equals("Readed") == false) tag += "," + s;
+                    string st = s.Trim();
+                    if (st.Equals(BookmarkItem.UNREAD) == false && st.Equals(BookmarkItem.READ) == false && st.Length > 0) tag += "," + st;
                 }
                 item.isUnReaded = "0";
                 item.tag = tag;
@@ -250,7 +257,6 @@ namespace ExtendRSS.Views
                         Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
                     }
                 });
-
             }
         }
 
@@ -259,13 +265,15 @@ namespace ExtendRSS.Views
         /// </summary>
         private void SetUnReaded(BookmarkItem item)
         {
-            if (Regex.IsMatch(item.tag, "\\W?Readed\\W?") == true || item.isUnReaded == "0")
+            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == true || item.isUnReaded == "0")
             {
-                string tag = "UnReaded";
-                string[] sub = item.tag.Split(',');
+                string tag = BookmarkItem.UNREAD;
+                char[] sp = {',', ' '};
+                string[] sub = item.tag.Split(sp,2);
                 foreach (string s in sub)
                 {
-                    if (s.Trim().Equals("UnReaded") == false && s.Trim().Equals("Readed") == false) tag += "," + s;
+                    string st = s.Trim();
+                    if (st.Equals(BookmarkItem.UNREAD) == false && st.Equals(BookmarkItem.READ) == false && st.Length > 0) tag += "," + st;
                 }
                 item.isUnReaded = "1";
                 item.tag = tag;
@@ -292,9 +300,9 @@ namespace ExtendRSS.Views
 
         private void SetStared(BookmarkItem item)
         {
-            if (Regex.IsMatch(item.tag, "\\W?Star\\W?") == false)
+            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.STAR + "($|\\W)") == false)
             {
-                item.tag += ",Star";
+                item.tag += "," + BookmarkItem.STAR;
                 App.deliciousApi.SaveLinkItemRecord(item);
 
                 App.deliciousApi.AddBookmark(item).ContinueWith(t =>
