@@ -8,6 +8,7 @@ using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
 using Microsoft.Phone.Tasks;
+using ExtendRSS.Models;
 
 namespace ExtendRSS
 {
@@ -17,6 +18,9 @@ namespace ExtendRSS
         string googleUrl = "http://google.com/gwt/x?noimg=1&u=";
         string baiduUrl = "http://gate.baidu.com/tc?from=opentc&src=";
         ProgressIndicator proIndicator;
+        BookmarkItem item;
+        bool IsRefresh;
+
         public BrowserPage()
         {
             InitializeComponent();
@@ -33,11 +37,20 @@ namespace ExtendRSS
 
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
-            url = NavigationContext.QueryString["url"].ToString();
-            url = googleUrl + url;
-            webBrowser.Navigate(new Uri(url, UriKind.Absolute));
             Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
             Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
+            url = NavigationContext.QueryString["url"].ToString();
+            item = App.deliciousApi.LoadLinkItemRecord(url);
+            IsRefresh = false;
+            if (item.cacheHtml != null)
+            {
+                webBrowser.NavigateToString(item.cacheHtml);
+            }
+            else
+            {
+                url = googleUrl + url;
+                webBrowser.Navigate(new Uri(url, UriKind.Absolute));
+            }
         }
 
         private void webBrowser_Navigated(object sender, NavigationEventArgs e)
@@ -45,6 +58,12 @@ namespace ExtendRSS
             proIndicator.IsVisible = false;
             Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
             Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
+            if (item.cacheHtml == null || (webBrowser.CanGoBack == false && IsRefresh))
+            {
+                item.cacheHtml = webBrowser.SaveToString();
+                App.deliciousApi.SaveLinkItemRecord(item);
+            }
+            IsRefresh = false;
         }
 
         private void webBrowser_Navigating(object sender, NavigatingEventArgs e)
@@ -75,6 +94,7 @@ namespace ExtendRSS
 
         private void Btn_Fresh_Click(object sender, EventArgs e)
         {
+            IsRefresh = true;
             webBrowser.Navigate(new Uri(url, UriKind.Absolute));
         }
 

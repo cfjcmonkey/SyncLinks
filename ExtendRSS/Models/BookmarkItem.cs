@@ -20,6 +20,7 @@ namespace ExtendRSS.Models
         [XmlIgnore]
         public static string STAR = "Star";
 
+        public string cacheHtml { set; get; }
         public string href { set; get; }
         public string description { set; get; }
         public string extended { set; get; }
