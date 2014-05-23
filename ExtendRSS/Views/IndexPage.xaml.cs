@@ -73,7 +73,7 @@ namespace ExtendRSS.Views
         /// </summary>
         private void AppBarIconButton_Set_Click(object sender, EventArgs e)
         {
-            Login_Popup.IsOpen = true;
+            NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
         }
 
         /// <summary>

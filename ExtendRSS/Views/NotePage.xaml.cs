@@ -24,11 +24,10 @@ namespace ExtendRSS.Views
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
             url = NavigationContext.QueryString["url"].ToString();
-//            string text = App.deliciousApi.LoadNote(url);
-            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
-            string text;
-            if (item == null || item.extended.Length == 0) text = url + "\n\n";
-            else text = item.extended;
+            string text = App.deliciousApi.LoadNote(url);
+//            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
+//            string text = item.extended;
+//            if (text == null || text.Length == 0) text = url + "\n\n";
             Txt_NoteContent.Text = text;
             Txt_NoteContent.Focus();
         }

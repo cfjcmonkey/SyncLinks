@@ -173,25 +173,25 @@ namespace ExtendRSS.Views
             b.Tap += (param_sender, param_e) => //点击进入链接
             {
                 BookmarkItem it = b.DataContext as BookmarkItem;
-                SetReaded(it);
+                SetReaded(ref it);
                 parent.NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + item.href, UriKind.Relative));
 
-                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
+//                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
             };
             ContextMenu contextmenu = new ContextMenu();
             MenuItem mark = new MenuItem(){ Header = "标记为已读/未读" };
             mark.Tap += (s, e) =>
             {
                 BookmarkItem mitem = (s as MenuItem).DataContext as BookmarkItem;
-                if (mitem.isUnReaded == "1") SetReaded(mitem);
-                else SetUnReaded(mitem);
+                if (mitem.isUnReaded == "1") SetReaded(ref mitem);
+                else SetUnReaded(ref mitem);
             };
 
             MenuItem star = new MenuItem(){ Header = "收藏" };
             star.Tap += (s, e) =>
             {
                 BookmarkItem sitem = (s as MenuItem).DataContext as BookmarkItem;
-                SetStared(sitem);
+                SetStared(ref sitem);
             };
 
             contextmenu.Items.Add(mark);
@@ -226,7 +226,7 @@ namespace ExtendRSS.Views
         /// <summary>
         /// 设链接为已读.记录到本地,同步到网络.
         /// </summary>
-        private void SetReaded(BookmarkItem item)
+        private void SetReaded(ref BookmarkItem item)
         {
             if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == false || item.isUnReaded == "1")
             {
@@ -263,7 +263,7 @@ namespace ExtendRSS.Views
         /// <summary>
         /// 设链接为未读.记录到本地,同步到网络
         /// </summary>
-        private void SetUnReaded(BookmarkItem item)
+        private void SetUnReaded(ref BookmarkItem item)
         {
             if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == true || item.isUnReaded == "0")
             {
@@ -298,7 +298,7 @@ namespace ExtendRSS.Views
             }
         }
 
-        private void SetStared(BookmarkItem item)
+        private void SetStared(ref BookmarkItem item)
         {
             if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.STAR + "($|\\W)") == false)
             {

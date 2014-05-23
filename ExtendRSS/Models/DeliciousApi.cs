@@ -75,6 +75,18 @@ namespace ExtendRSS.Models
         }
 
         /// <summary>
+        /// 清除存储的BookmarkItem项,保留笔记
+        /// </summary>
+        public void ClearStorage()
+        {
+            foreach (var i in store.GetDirectoryNames("*"))
+                if (store.FileExists(i + "/BookmarkItemRecord.xml"))
+                {
+                    store.DeleteFile(i + "/BookmarkItemRecord.xml");
+                }
+//            store.DeleteFile(store.GetFileNames("*/BookmarkItemRecord.xml"));
+        }
+        /// <summary>
         /// Check to see when a user last posted an item.
         /// </summary>
         /// <returns></returns>
@@ -118,7 +130,7 @@ namespace ExtendRSS.Models
                             }
                             else
                             {
-                                if (Regex.IsMatch(item.tag, "\\W?Readed\\W?")) item.isUnReaded = "0";
+                                if (Regex.IsMatch(item.tag, "(^|\\W)Readed($|\\W)")) item.isUnReaded = "0";
                                 else item.isUnReaded = "1";
                                 SaveLinkItemRecord(item);
                             }
@@ -250,7 +262,7 @@ namespace ExtendRSS.Models
 
         public bool IsExits(string url)
         {
-            return store.DirectoryExists(url.GetHashCode().ToString());
+            return store.FileExists(url.GetHashCode().ToString() + "/BookmarkItemRecord.xml");
         }
 
         public BookmarkItem LoadLinkItemRecord(string url)
