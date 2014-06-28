@@ -76,7 +76,7 @@
     <phone:PhoneApplicationPage.ApplicationBar>
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Default">
             <shell:ApplicationBarIconButton x:Name="Btn_PrePage" Text="前一页" IconUri="/Assets/back.png" Click="Btn_GoBack_Click" />
-            <shell:ApplicationBarIconButton Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" />
+            <shell:ApplicationBarIconButton x:Name="Btn_Add" Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" />
             <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" />
             <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
             <shell:ApplicationBar.MenuItems>

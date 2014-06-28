@@ -27,7 +27,7 @@ namespace ExtendRSS.Views
             };
             SystemTray.SetProgressIndicator(this, proIndicator);
 
-            Login_Content.Width = Application.Current.Host.Content.ActualWidth;
+//            Login_Content.Width = Application.Current.Host.Content.ActualWidth;
         }
 
         private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -35,38 +35,38 @@ namespace ExtendRSS.Views
             if (e.AddedItems[0] == UnReadedViewer)
             {
                 if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).LocalRefresh();
-                UnReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.UNREAD };
+                else UnReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.UNREAD };
             }
             else if (e.AddedItems[0] == ReadedViewer)
             {
                 if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).LocalRefresh();
-                ReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.READ };
+                else ReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.READ };
             }
             else if (e.AddedItems[0] == RecentViewer)
             {
                 if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
-                RecentViewer.Content = new LinkListControl(this);
+                else RecentViewer.Content = new LinkListControl(this);
             }
             else if (e.AddedItems[0] == StarViewer)
             {
                 if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).LocalRefresh();
-                StarViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.STAR };
+                else StarViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.STAR };
             }
         }
 
-        /// <summary>
-        /// 登陆按钮的响应，登陆成功后显示最近的书签
-        /// </summary>
-        private void Btn_Login_Click(object sender, RoutedEventArgs e)
-        {
-            App.deliciousApi.SetAccount(Txt_Username.Text, Txt_Password.Password);
-            Login_Popup.IsOpen = false;
-        }
+        ///// <summary>
+        ///// 登陆按钮的响应，登陆成功后显示最近的书签
+        ///// </summary>
+        //private void Btn_Login_Click(object sender, RoutedEventArgs e)
+        //{
+        //    App.deliciousApi.SetAccount(Txt_Username.Text, Txt_Password.Password);
+        //    Login_Popup.IsOpen = false;
+        //}
 
-        private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
-        {
-            Login_Popup.IsOpen = false;
-        }
+        //private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
+        //{
+        //    Login_Popup.IsOpen = false;
+        //}
 
         /// <summary>
         /// 设置按钮的响应,弹出登录框
@@ -81,11 +81,11 @@ namespace ExtendRSS.Views
         /// </summary>
         protected override void OnBackKeyPress(System.ComponentModel.CancelEventArgs e)
         {
-            if (Login_Popup.IsOpen)
-            {
-                Login_Popup.IsOpen = false;
-                e.Cancel = true;
-            }
+            //if (Login_Popup.IsOpen)
+            //{
+            //    Login_Popup.IsOpen = false;
+            //    e.Cancel = true;
+            //}
         }
 
         private void AppBarIconButton_Refresh_Click(object sender, EventArgs e)

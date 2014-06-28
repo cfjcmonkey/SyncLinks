@@ -16,7 +16,7 @@
 
         <!--LayoutRoot 是包含所有页面内容的根网格-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
-        <!--登陆框-->
+        <!--登陆框        
         <Popup Name="Login_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Grid x:Name="Login_Content" HorizontalAlignment="Center" Margin="0,-250,0,0" Height="500" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
@@ -57,7 +57,7 @@
                 <Grid Grid.Row="4" Background="Black" Opacity="0.8"/>
             </Grid>
         </Popup>
-        
+        -->
         <!--枢轴控件-->
         <phone:Pivot x:Name="PivotControl" Title="ExtendRSS" SelectionChanged="Pivot_SelectionChanged">
             <phone:PivotItem Name="UnReadedViewer" Header="未读"/>

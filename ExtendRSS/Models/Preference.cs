@@ -56,5 +56,7 @@ namespace ExtendRSS.Models
                 IsolatedStorageSettings.ApplicationSettings["STR_USERNAME"] = encryptedBytes;
             }
         }
+
+        public bool IsSycn;
     }
 }

@@ -21,11 +21,26 @@ namespace ExtendRSS.Models
         private Preference preference;
         private const string host = "https://api.del.icio.us";
 
+        public const string AUTHORITYERROR = "authority error";
+        public const string NETWORKERROR = "network error";
+
         public DeliciousAPI() 
         {
             preference = LoadPreference();
-            if (preference == null) preference = new Preference();
+            if (preference == null) preference = new Preference() { IsSycn = false };
         }
+
+        public bool IsSycn()
+        {
+            return preference.IsSycn;
+        }
+
+        public void SetSycn(bool isSycn)
+        {
+            preference.IsSycn = isSycn;
+            SavePreference();
+        }
+
         /// <summary>
         /// 重设用户名和密码.
         /// 由Preference管理本地的存储，因此不用调用SavePreference来保存.
@@ -34,8 +49,13 @@ namespace ExtendRSS.Models
         {
             preference.Username = user;
             preference.Password = pass;
+            SavePreference();
         }
 
+        /// <summary>
+        /// 从本地加载Preference
+        /// </summary>
+        /// <returns>返回Preference. 若没有存储，则返回null</returns>
         public Preference LoadPreference()
         {
             XmlSerializer ser = new XmlSerializer(typeof(Preference));
@@ -47,6 +67,9 @@ namespace ExtendRSS.Models
             else return null;
         }
 
+        /// <summary>
+        /// 保存Preference到本地
+        /// </summary>
         public void SavePreference()
         {
             XmlSerializer ser = new XmlSerializer(typeof(Preference));
@@ -54,45 +77,13 @@ namespace ExtendRSS.Models
                 ser.Serialize(s, preference);
         }
 
-        public string LoadNote(string url)
-        {
-            string path = url.GetHashCode().ToString();
-            if (store.FileExists(path + "/Note.xml"))
-            {
-                using (var s = new StreamReader(store.OpenFile(path + "/Note.xml", FileMode.Open, FileAccess.Read, FileShare.Read)))
-                    return s.ReadToEnd();
-            }
-            return null;
-        }
-
-        public void SaveNote(string url, string content)
-        {
-            string path = url.GetHashCode().ToString();
-            if (store.DirectoryExists(path) == false)
-                store.CreateDirectory(path);
-            using (var s = new StreamWriter(store.CreateFile(path + "/Note.xml")))
-                    s.Write(content);
-        }
-
-        /// <summary>
-        /// 清除存储的BookmarkItem项,保留笔记
-        /// </summary>
-        public void ClearStorage()
-        {
-            foreach (var i in store.GetDirectoryNames("*"))
-                if (store.FileExists(i + "/BookmarkItemRecord.xml"))
-                {
-                    store.DeleteFile(i + "/BookmarkItemRecord.xml");
-                }
-//            store.DeleteFile(store.GetFileNames("*/BookmarkItemRecord.xml"));
-        }
-        /// <summary>
-        /// Check to see when a user last posted an item.
-        /// </summary>
-        /// <returns></returns>
-        public Task<string> GetUpdates(){
-            return GetAsync(host + "/v1/posts/update");    
-        }
+        ///// <summary>
+        ///// Check to see when a user last posted an item.
+        ///// </summary>
+        ///// <returns></returns>
+        //public Task<string> GetUpdates(){
+        //    return GetAsync(host + "/v1/posts/update");    
+        //}
 
         /// <summary>
         /// Fetch all bookmarks by date or index range.
@@ -118,12 +109,12 @@ namespace ExtendRSS.Models
                             item.extended = ContentDecoder(node.Attribute("extended").Value);
                             item.tag = node.Attribute("tag").Value;
                             item.time = node.Attribute("time").Value;
-                            item.time = item.time.Replace('T', ' ').Replace('Z', ' ');                    //may slow down the deal speed, better to use regex
+                            item.time = item.time.Replace('T', ' ').Replace('Z', ' ').Trim();                    //may slow down the deal speed, better to use regex
                             if (IsExits(item.href))
                             {
                                 BookmarkItem pItem = LoadLinkItemRecord(item.href);
                                 item.isUnReaded = pItem.isUnReaded;
-                                if (item.time.Equals(pItem.time) == false)
+                                if (item.time.CompareTo(pItem.time) > 0)
                                 {
                                     SaveLinkItemRecord(item);
                                 }
@@ -141,9 +132,7 @@ namespace ExtendRSS.Models
                 }
                 else if (t.Status == TaskStatus.Faulted)
                 {
-                    if (t.Exception.InnerException.Message.Contains("401"))
-                        throw new Exception("401 Unauthority error");
-                    else throw t.Exception;
+                    throw t.Exception.InnerException;
                 }
                 return new List<BookmarkItem>();
             });
@@ -172,9 +161,7 @@ namespace ExtendRSS.Models
             }
             else if (t.Status == TaskStatus.Faulted)
             {
-                if (t.Exception.InnerException.Message.Contains("401"))
-                    throw new Exception("401 Unauthority error");
-                else throw t.Exception;
+                throw t.Exception.InnerException;
             }
             return "error";
         });
@@ -205,11 +192,12 @@ namespace ExtendRSS.Models
                 {
                     result = t.Result;
                 }
-                else
+                else if (t.Status == TaskStatus.Faulted)
                 {
-                    if (t.Exception.InnerException.Message.Contains("401"))
-                        throw new Exception("401 Unauthority error");
-                    else throw t.Exception;
+                    //"Response status code does not indicate success: 401 (Unauthorized)."
+                    if (t.Exception.InnerException.Message.Contains("401 (Unauthorized)"))
+                        throw new Exception(AUTHORITYERROR);
+                    else throw new Exception(NETWORKERROR);
                 }
                 return result;
             });
@@ -277,7 +265,7 @@ namespace ExtendRSS.Models
             else return null;
         }
 
-        private string ContentEncoder(string content)
+        public string ContentEncoder(string content)
         {
             StringBuilder sb = new StringBuilder();
             foreach (char c in content)
@@ -287,7 +275,7 @@ namespace ExtendRSS.Models
             return sb.ToString();
         }
 
-        private string ContentDecoder(string content)
+        public string ContentDecoder(string content)
         {
             try
             {
@@ -302,6 +290,55 @@ namespace ExtendRSS.Models
             }catch(Exception e){
                 return content;
             }
+        }
+
+        /// <summary>
+        /// 从本地加载笔记内容
+        /// </summary>
+        public string LoadNote(string url)
+        {
+            string path = url.GetHashCode().ToString();
+            if (store.FileExists(path + "/Note.xml"))
+            {
+                using (var s = new StreamReader(store.OpenFile(path + "/Note.xml", FileMode.Open, FileAccess.Read, FileShare.Read)))
+                    return s.ReadToEnd();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 保存笔记内容到本地
+        /// </summary>
+        public void SaveNote(string url, string content)
+        {
+            string path = url.GetHashCode().ToString();
+            if (store.DirectoryExists(path) == false)
+                store.CreateDirectory(path);
+            using (var s = new StreamWriter(store.CreateFile(path + "/Note.xml")))
+                s.Write(content);
+        }
+
+        /// <summary>
+        /// 清除存储的BookmarkItem项,保留笔记
+        /// </summary>
+        public void ClearStorage()
+        {
+            foreach (var i in store.GetDirectoryNames("*"))
+                if (store.FileExists(i + "/BookmarkItemRecord.xml"))
+                {
+                    store.DeleteFile(i + "/BookmarkItemRecord.xml");
+                }
+            //            store.DeleteFile(store.GetFileNames("*/BookmarkItemRecord.xml"));
+        }
+
+        /// <summary>
+        /// 当前只实现删除本地信息
+        /// </summary>
+        public void DeleteBookmark(string url)
+        {
+            string path = url.GetHashCode().ToString();
+            if (store.FileExists(path + "/BookmarkItemRecord.xml"))
+                store.DeleteFile(path + "/BookmarkItemRecord.xml");
         }
     }
 }

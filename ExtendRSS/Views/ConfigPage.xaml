@@ -47,6 +47,7 @@
 
             <Button x:Name="SetAccount" Content="重置用户名和密码" Click="SetAccount_Click"/>
             <Button x:Name="ClearCache" Content="清除缓冲(保留笔记)" Click="ClearCache_Click"/>
+            <Button x:Name="Sycn" Content="同步状态:开启" Click="Sycn_Click"/>
         </StackPanel>
     </Grid>
 

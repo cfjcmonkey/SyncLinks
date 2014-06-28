@@ -24,6 +24,7 @@ namespace ExtendRSS.Views
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
             url = NavigationContext.QueryString["url"].ToString();
+            url = App.deliciousApi.ContentDecoder(url);
             string text = App.deliciousApi.LoadNote(url);
 //            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
 //            string text = item.extended;
@@ -37,36 +38,46 @@ namespace ExtendRSS.Views
             if (e.Direction == System.Windows.Controls.Orientation.Horizontal && e.HorizontalVelocity > 0)
             {
                 if (App.RootFrame.CanGoBack) App.RootFrame.GoBack();
-                else NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + url, UriKind.Relative));
+                else
+                {
+                    string tmp = App.deliciousApi.ContentEncoder(url);
+                    NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + tmp, UriKind.Relative));
+                }
             }
         }
 
         /// <summary>
         /// BeginTransaction
+        /// 保存笔记.
+        /// 当前只保存笔记到本地.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void NavigationOutTransition_BeginTransition(object sender, RoutedEventArgs e)
         {
             App.deliciousApi.SaveNote(url, Txt_NoteContent.Text);
-            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
-            item.extended = Txt_NoteContent.Text;
-            App.deliciousApi.SaveLinkItemRecord(item);
-            App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+
+            if (App.deliciousApi.IsSycn())
             {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        //if done, do nothing
-                        if (t.Result != "done") MessageBox.Show("同步失败...检查网络或用户名和密码");
-                    });
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                {
-                    Dispatcher.BeginInvoke(() => { MessageBox.Show("同步失败...检查网络或用户名和密码"); });
-                }
-            });
+                BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
+                item.extended = Txt_NoteContent.Text;
+                App.deliciousApi.SaveLinkItemRecord(item);
+                //App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                //{
+                //    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                //    {
+                //        Dispatcher.BeginInvoke(() =>
+                //        {
+                //            //if done, do nothing
+                //            if (t.Result != "done") MessageBox.Show("同步失败...检查网络或用户名和密码");
+                //        });
+                //    }
+                //    else if (t.Status == TaskStatus.Faulted)
+                //    {
+                //        Dispatcher.BeginInvoke(() => { MessageBox.Show("同步失败...检查网络或用户名和密码"); });
+                //    }
+                //});
+            }
         }
 
     }

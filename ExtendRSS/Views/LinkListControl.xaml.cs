@@ -106,12 +106,13 @@ namespace ExtendRSS.Views
                 else if (t.Status == TaskStatus.Faulted)
                     Dispatcher.BeginInvoke(() =>
                     {
-                        if (t.Exception.InnerException.Message.Contains("401"))
+                        if (t.Exception.InnerException.Message == DeliciousAPI.AUTHORITYERROR)
                         {
-                            MessageBox.Show("请求失败！检查用户名和密码");
-                            (parent as IndexPage).Login_Popup.IsOpen = true;
+                            MessageBox.Show("请确认用户名和密码啊,亲~");
+//                            (parent as IndexPage).Login_Popup.IsOpen = true;
+                            parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
                         }
-                        else MessageBox.Show("请求失败！检查网络");
+                        else MessageBox.Show("网络状况不太好啊,亲~");
                         parent.proIndicator.IsVisible = false;
                     });
             });
@@ -143,12 +144,13 @@ namespace ExtendRSS.Views
                 else if (t.Status == TaskStatus.Faulted)
                     Dispatcher.BeginInvoke(() =>
                     {
-                        if (t.Exception.InnerException.Message.Contains("401"))
+                        if (t.Exception.InnerException.Message == DeliciousAPI.AUTHORITYERROR)
                         {
-                            MessageBox.Show("请求失败！检查用户名和密码");
-                            (parent as IndexPage).Login_Popup.IsOpen = true;
+                            MessageBox.Show("请确认用户名和密码啊,亲~");
+                            //                            (parent as IndexPage).Login_Popup.IsOpen = true;
+                            parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
                         }
-                        else MessageBox.Show("请求失败！检查网络");
+                        else MessageBox.Show("网络状况不太好啊,亲~");
                         parent.proIndicator.IsVisible = false;
                     });
             });
@@ -174,7 +176,8 @@ namespace ExtendRSS.Views
             {
                 BookmarkItem it = b.DataContext as BookmarkItem;
                 SetReaded(ref it);
-                parent.NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + item.href, UriKind.Relative));
+                string url = App.deliciousApi.ContentEncoder(item.href);
+                parent.NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + url, UriKind.Relative));
 
 //                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
             };
@@ -194,8 +197,17 @@ namespace ExtendRSS.Views
                 SetStared(ref sitem);
             };
 
+            MenuItem delitem = new MenuItem() { Header = "删除" };
+            delitem.Tap += (s, e) =>
+            {
+                BookmarkItem sitem = (s as MenuItem).DataContext as BookmarkItem;
+                App.deliciousApi.DeleteBookmark(sitem.href);
+                LocalRefresh();
+            };
+
             contextmenu.Items.Add(mark);
             contextmenu.Items.Add(star);
+            contextmenu.Items.Add(delitem);
             ContextMenuService.SetContextMenu(stack, contextmenu);
 /*
             b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
@@ -240,23 +252,26 @@ namespace ExtendRSS.Views
                 }
                 item.isUnReaded = "0";
                 item.tag = tag;
+                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 App.deliciousApi.SaveLinkItemRecord(item);
 
-                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                if (App.deliciousApi.IsSycn())
                 {
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
                     {
-                        Dispatcher.BeginInvoke(() =>
+                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                         {
-                            //if done, do nothing
-                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");
-                        });
-                    }
-                    else if (t.Status == TaskStatus.Faulted)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                    }
-                });
+                            if (t.Result != "done")
+                            {
+                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
+                            }
+                        }
+                        else if (t.Status == TaskStatus.Faulted)
+                        {
+                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
+                        }
+                    });
+                }
             }
         }
 
@@ -277,24 +292,26 @@ namespace ExtendRSS.Views
                 }
                 item.isUnReaded = "1";
                 item.tag = tag;
+                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 App.deliciousApi.SaveLinkItemRecord(item);
 
-                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                if (App.deliciousApi.IsSycn())
                 {
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
                     {
-                        Dispatcher.BeginInvoke(() =>
+                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                         {
-                            //if done, do nothing
-                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");
-                        });
-                    }
-                    else if (t.Status == TaskStatus.Faulted)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                    }
-                });
-
+                            if (t.Result != "done")
+                            {
+                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
+                            }
+                        }
+                        else if (t.Status == TaskStatus.Faulted)
+                        {
+                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
+                        }
+                    });
+                }
             }
         }
 
@@ -303,24 +320,26 @@ namespace ExtendRSS.Views
             if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.STAR + "($|\\W)") == false)
             {
                 item.tag += "," + BookmarkItem.STAR;
+                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 App.deliciousApi.SaveLinkItemRecord(item);
 
-                App.deliciousApi.AddBookmark(item).ContinueWith(t =>
+                if (App.deliciousApi.IsSycn())
                 {
-                    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
                     {
-                        Dispatcher.BeginInvoke(() =>
+                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                         {
-                            //if done, do nothing
-                            if (t.Result != "done") MessageBox.Show("请求失败！检查网络或用户名和密码");
-                        });
-                    }
-                    else if (t.Status == TaskStatus.Faulted)
-                    {
-                        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                    }
-                });
-
+                            if (t.Result != "done")
+                            {
+                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
+                            }
+                        }
+                        else if (t.Status == TaskStatus.Faulted)
+                        {
+                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
+                        }
+                    });
+                }
             }
         }
 
