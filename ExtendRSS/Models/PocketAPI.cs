@@ -25,7 +25,7 @@ namespace SyncLinks.Models
     /// </summary>
     public class PocketAPI
     {
-        static readonly string consumer_key = "48664-97ee937a868f84d4c422db40";      
+        static readonly string consumer_key = "";      
         static readonly string redirect_uri = "synclinks:authorizationFinished";
         static readonly string host = "https://getpocket.com";
         Preference preference;
