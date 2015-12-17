@@ -7,27 +7,64 @@ using System.Windows.Controls;
 using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
+using SyncLinks.Models;
 
-namespace ExtendRSS.Views
+namespace SyncLinks.Views
 {
     public partial class ConfigPage : PhoneApplicationPage
     {
         public ConfigPage()
         {
             InitializeComponent();
-            if (App.deliciousApi.IsSycn()) Sycn.Content = "同步状态:开启";
-            else Sycn.Content = "同步状态:关闭";
+
+            ProgressIndicator indicator = new ProgressIndicator()
+            {
+                IsVisible = false,
+                IsIndeterminate = true,
+                Text = "正在联系服务器"
+            };
+            SystemTray.SetProgressIndicator(this, indicator);
+
+            this.Loaded += ConfigPage_Loaded;
+        }
+
+        private void ConfigPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (NavigationContext.QueryString.ContainsKey("AuthorizationFinished"))
+            {
+                App.pocketApi.GetAccessToken().ContinueWith(t =>
+                {
+                    if (t != null && t.Result == true)
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            SystemTray.ProgressIndicator.IsVisible = false;
+                            App.pocketApi.IsSync = true;
+                            MessageBox.Show("完成.");
+                            NavigationService.Navigate(new Uri("/Views/IndexPage.xaml", UriKind.Relative));
+                        });
+                    }
+                    else
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            SystemTray.ProgressIndicator.IsVisible = false;
+                            MessageBox.Show("授权失败.");
+                        });
+                    }
+                });
+            }
         }
 
         private void SetAccount_Click(object sender, RoutedEventArgs e)
         {
-            App.deliciousApi.SetAccount(Txt_Username.Text, Txt_Password.Password);
-            MessageBox.Show("完成.");
+            SystemTray.ProgressIndicator.IsVisible = true;
+            App.pocketApi.AssignAuthority();
         }
 
         private void ClearCache_Click(object sender, RoutedEventArgs e)
         {
-            App.deliciousApi.ClearStorage();
+            App.localFileCache.ClearStorage();
             MessageBox.Show("完成.");
         }
 
@@ -38,16 +75,7 @@ namespace ExtendRSS.Views
         /// </summary>
         private void Sycn_Click(object sender, RoutedEventArgs e)
         {
-            if (App.deliciousApi.IsSycn())
-            {
-                Sycn.Content = "同步状态:关闭";
-                App.deliciousApi.SetSycn(false);
-            }
-            else
-            {
-                Sycn.Content = "同步状态:开启";
-                App.deliciousApi.SetSycn(true);
-            }
+
         }
     }
 }

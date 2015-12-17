@@ -8,12 +8,12 @@ using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
 using Microsoft.Phone.Tasks;
-using ExtendRSS.Models;
+using SyncLinks.Models;
 using System.Xml;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 
-namespace ExtendRSS
+namespace SyncLinks
 {
     public partial class BrowserPage : PhoneApplicationPage
     {
@@ -50,8 +50,8 @@ namespace ExtendRSS
             IsRefresh = false;
             
             orgUrl = NavigationContext.QueryString["url"].ToString();
-            orgUrl = App.deliciousApi.ContentDecoder(orgUrl);
-            item = App.deliciousApi.LoadLinkItemRecord(orgUrl);
+            orgUrl = LocalFileCache.ContentDecoder(orgUrl);
+            item = App.localFileCache.GetBookmarkItem(orgUrl);
             if (item.cacheHtml != null)
             {
                 url = orgUrl;
@@ -59,9 +59,10 @@ namespace ExtendRSS
             }
             else
             {
-                url = googleUrl + orgUrl;
+                url = baiduUrl + orgUrl;
                 webBrowser.Navigate(new Uri(url, UriKind.Absolute));
             }
+            App.localFileCache.UpdateRecentIndex(item);
         }
 
         private void webBrowser_Navigated(object sender, NavigationEventArgs e)
@@ -85,12 +86,11 @@ namespace ExtendRSS
             string curUrl = url;
             if (curUrl.StartsWith(googleUrl)) curUrl = curUrl.Remove(0, googleUrl.Length);
             if (curUrl.StartsWith(baiduUrl)) curUrl = curUrl.Remove(0, baiduUrl.Length);
-            Btn_Add.IsEnabled = !App.deliciousApi.IsExits(curUrl);
+            Btn_Add.IsEnabled = !LocalFileCache.IsExits(curUrl);
 
             if (item.cacheHtml == null || ( url.EndsWith(orgUrl) && IsRefresh))
             {
                 item.cacheHtml = webBrowser.SaveToString();
-                App.deliciousApi.SaveLinkItemRecord(item);
             }
             IsRefresh = false;
         }
@@ -150,11 +150,8 @@ namespace ExtendRSS
         }
 
         /// <summary>
-        /// 添加标签.
-        /// 当前只添加标签到本地,不同步到网上.
+        /// 添加链接.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void Btn_OK_Click(object sender, EventArgs e)
         {
             string curUrl = url;
@@ -171,42 +168,10 @@ namespace ExtendRSS
                 if (i != -1) curUrl = curUrl.Remove(i);
             }
 
-            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(curUrl);
-            if (item == null)
-            {
-                item = new BookmarkItem();
-                item.extended = "";
-            }
-            item.cacheHtml = webBrowser.SaveToString();
-            item.href = curUrl;
-            item.isUnReaded = "1";
-            item.tag = BookmarkItem.UNREAD;
-            item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            item.description = Txt_Title.Text;
-
-            App.deliciousApi.SaveLinkItemRecord(item);
+            var item = App.localFileCache.AddBookmarkItem(curUrl, Txt_Title.Text, webBrowser.SaveToString());
+            App.pocketApi.AddNewItem(item);
             MessageBox.Show("添加完成.");
             AddBookmark_Popup.IsOpen = false;
-
-            if (App.deliciousApi.IsSycn())
-            {
-                //App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                //{
-                //    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                //    {
-                //        Dispatcher.BeginInvoke(() =>
-                //        {
-                //            //if done, do nothing
-                //            if (t.Result != "done") MessageBox.Show(t.Result);
-                //            else MessageBox.Show("添加完成.");
-                //        });
-                //    }
-                //    else if (t.Status == TaskStatus.Faulted)
-                //    {
-                //        Dispatcher.BeginInvoke(() => { MessageBox.Show("请求失败！检查网络或用户名和密码"); });
-                //    }
-                //});
-            }
         }
 
         private void Btn_Cancel_Click(object sender, EventArgs e)
@@ -234,7 +199,7 @@ namespace ExtendRSS
         {
             if (e.Direction == System.Windows.Controls.Orientation.Horizontal && e.HorizontalVelocity < 0)
             {
-                string tmp = App.deliciousApi.ContentEncoder(orgUrl);
+                string tmp = LocalFileCache.ContentEncoder(orgUrl);
                 NavigationService.Navigate(new Uri("/Views/NotePage.xaml?url=" + tmp, UriKind.Relative));
             }
         }

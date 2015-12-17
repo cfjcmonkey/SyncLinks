@@ -9,17 +9,19 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
-using ExtendRSS.Models;
+using SyncLinks.Models;
 
-namespace ExtendRSS.Views
+namespace SyncLinks.Views
 {
     public partial class IndexPage : PhoneApplicationPage
     {
+        public enum PageStatus { UNREAD, READ, STAR, RECENT, OTHER}
+
         public ProgressIndicator proIndicator;
         public IndexPage()
         {
             InitializeComponent();
-
+            this.Loaded += IndexPage_Loaded;
             proIndicator = new ProgressIndicator()
             {
                 IsIndeterminate = true,
@@ -30,28 +32,26 @@ namespace ExtendRSS.Views
 //            Login_Content.Width = Application.Current.Host.Content.ActualWidth;
         }
 
+        private void IndexPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
         private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems[0] == UnReadedViewer)
-            {
-                if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).LocalRefresh();
-                else UnReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.UNREAD };
-            }
-            else if (e.AddedItems[0] == ReadedViewer)
-            {
-                if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).LocalRefresh();
-                else ReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.READ };
-            }
-            else if (e.AddedItems[0] == RecentViewer)
-            {
-                if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
-                else RecentViewer.Content = new LinkListControl(this);
-            }
-            else if (e.AddedItems[0] == StarViewer)
-            {
-                if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).LocalRefresh();
-                else StarViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.STAR };
-            }
+            var pivot = e.RemovedItems[0] as PivotItem;
+            //if (pivot != null && pivot.Content != null) (pivot.Content as LinkListControl).SaveCurrentIndex();
+            UpdatePage(e.AddedItems[0] as PivotItem);
+        }
+
+        public bool IsSelected(PageStatus pageStatus)
+        {
+            var item = PivotControl.SelectedItem as PivotItem;
+            if (item == UnReadedViewer) return pageStatus == PageStatus.UNREAD;
+            else if (item == ReadedViewer) return pageStatus == PageStatus.READ;
+            else if (item == RecentViewer) return pageStatus == PageStatus.RECENT;
+            else if (item == StarViewer) return pageStatus == PageStatus.STAR;
+            else return false;
         }
 
         ///// <summary>
@@ -88,19 +88,35 @@ namespace ExtendRSS.Views
             //}
         }
 
+        /// <summary>
+        /// why not use refresh instead of new object?
+        /// </summary>
         private void AppBarIconButton_Refresh_Click(object sender, EventArgs e)
         {
-            if (PivotControl.SelectedItem == UnReadedViewer)
+            UpdatePage(PivotControl.SelectedItem as PivotItem);
+        }
+
+        void UpdatePage(PivotItem item)
+        {
+            if (item == UnReadedViewer)
             {
-                UnReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.UNREAD };
+                if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).UpdateData();
+                else UnReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.UNREAD };
             }
-            else if (PivotControl.SelectedItem == ReadedViewer)
+            else if (item == ReadedViewer)
             {
-                ReadedViewer.Content = new LinkListControl(this) { StatusTag = BookmarkItem.READ };
+                if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).UpdateData();
+                else ReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.READ };
             }
-            else if (PivotControl.SelectedItem == RecentViewer)
+            else if (item == RecentViewer)
             {
-                RecentViewer.Content = new LinkListControl(this);
+                if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
+                else RecentViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.RECENT };
+            }
+            else if (item == StarViewer)
+            {
+                if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).UpdateData();
+                else StarViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.STAR };
             }
         }
 

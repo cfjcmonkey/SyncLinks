@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Deployment xmlns="http://schemas.microsoft.com/windowsphone/2012/deployment" AppPlatformVersion="8.0">
   <DefaultLanguage xmlns="" code="zh-CN" />
-  <App xmlns="" ProductID="{26a7d7bf-f5f8-43af-962a-6bb878a87a44}" Title="ExtendRSS" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="ExtendRSS author" Description="Sync your web browser pages to mobile phone!" Publisher="ExtendRSS" PublisherID="{a2f66131-0849-4303-b6ab-73a0310419f8}">
-    <IconPath IsRelative="true" IsResource="false">Assets\ApplicationIcon.png</IconPath>
+  <App xmlns="" ProductID="{26a7d7bf-f5f8-43af-962a-6bb878a87a44}" Title="SyncLinks" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="cfjmonkey" Description="Sync your web browser pages to mobile phone!" Publisher="SyncLinks" PublisherID="{a2f66131-0849-4303-b6ab-73a0310419f8}">
+    <IconPath IsRelative="true" IsResource="false">sync.png</IconPath>
     <Capabilities>
       <Capability Name="ID_CAP_NETWORKING" />
       <Capability Name="ID_CAP_MEDIALIB_AUDIO" />
@@ -14,12 +14,12 @@
       <DefaultTask Name="_default" NavigationPage="Views/IndexPage.xaml" />
     </Tasks>
     <Tokens>
-      <PrimaryToken TokenID="ExtendRSSToken" TaskName="_default">
+      <PrimaryToken TokenID="SyncLinksToken" TaskName="_default">
         <TemplateFlip>
-          <SmallImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileSmall.png</SmallImageURI>
+          <SmallImageURI IsRelative="true" IsResource="false">sync.png</SmallImageURI>
           <Count>0</Count>
-          <BackgroundImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileMedium.png</BackgroundImageURI>
-          <Title>ExtendRSS</Title>
+          <BackgroundImageURI IsRelative="true" IsResource="false">sync.png</BackgroundImageURI>
+          <Title>SyncLinks</Title>
           <BackContent></BackContent>
           <BackBackgroundImageURI></BackBackgroundImageURI>
           <BackTitle></BackTitle>
@@ -28,6 +28,9 @@
         </TemplateFlip>
       </PrimaryToken>
     </Tokens>
+    <Extensions>
+      <Protocol Name="synclinks" NavUriFragment="encodedLaunchUri=%s" TaskID="_default" />
+    </Extensions>
     <ScreenResolutions>
       <ScreenResolution Name="ID_RESOLUTION_WVGA" />
       <ScreenResolution Name="ID_RESOLUTION_WXGA" />

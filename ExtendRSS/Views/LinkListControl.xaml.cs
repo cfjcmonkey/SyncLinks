@@ -9,349 +9,212 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
-using ExtendRSS.Models;
+using SyncLinks.Models;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 
-namespace ExtendRSS.Views
+namespace SyncLinks.Views
 {
     public partial class LinkListControl : UserControl
     {
-        IndexPage parent;
-        int count; //已加载的链接数
-        public string StatusTag { get; set; }
+        IndexPage parent; //用systemstray...代替
+        List<BookmarkItem> itemList;
+        HashSet<string> itemHashSet;
+        int total { get { return itemList.Count; } }
+
+        public IndexPage.PageStatus StatusTag { get; set; }
 
         public LinkListControl(IndexPage page)
         {
             InitializeComponent();
 
             parent = page;
-            count = 0;
+            itemList = new List<BookmarkItem>();
+            itemHashSet = new HashSet<string>();
+            App.localFileCache.ListIndexChanged += LocalFileCache_ListIndexChanged;
+            //App.pocketApi.ItemStatusChanged += PocketApi_ItemStatusChanged;
+            
+            ////////////////////////TEST
+            //if (StatusTag == IndexPage.PageStatus.UNREAD)
+            //{
+            //    App.localFileCache.AddBunchItemRecords(App.pocketApi.TestData(), 0);
+            //}
+            ///////////////////////
+        }
+
+        ~LinkListControl()
+        {
+            App.localFileCache.ListIndexChanged -= LocalFileCache_ListIndexChanged;
+            //App.pocketApi.ItemStatusChanged -= PocketApi_ItemStatusChanged;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            OfflineLoad(StatusTag);
-            if (StatusTag == BookmarkItem.UNREAD)
-                LoadUnReadedLinks();
-            else LoadRecentLinks(StatusTag);
+            UpdateData();
+        }
+
+        public void UpdateData()
+        {
+            OfflineLoad(true);
+            if (total == 0) OnlineLoadUI(0, 10);
+            else OnlineLoadUI(0, -1); //TEST
         }
 
         public void LocalRefresh()
         {
-            OfflineLoad(StatusTag);
+            OfflineLoad(true);
         }
+
+        private void UpdateUI()
+        {
+            ResultListControl.ItemsSource = null;
+            ResultListControl.ItemsSource = itemList;
+        }
+
+        private void LocalFileCache_ListIndexChanged(IndexPage.PageStatus pageStatus)
+        {
+            Dispatcher.BeginInvoke(() => {
+                //判定当前是否显示在页面上
+                if (parent.IsSelected(StatusTag))
+                {
+                    if (pageStatus == StatusTag) OfflineLoad(true);
+                }
+            });
+        }
+
+        //private void PocketApi_ItemStatusChanged(object sender, BookmarkItem item, IndexPage.PageStatus pageStatus)
+        //{
+        //    //Update itemList, do not need to update UI.
+        //    if (StatusTag == pageStatus) AddItem2UI(item);
+        //    else RemoveItem4UI(item);
+        //}
 
         /// <summary>
         /// 加载本地的链接信息
+        /// 绑定数据和界面，并更新界面
         /// </summary>
-        /// <param name="tag">加载包含指定tag的链接;若tag为null,则加载所有链接</param>
-        private void OfflineLoad(string tag)
+        /// <param name="tag">加载包含指定tag的链接;若tag不可识别,则加载所有链接</param>
+        private void OfflineLoad(bool isUpdateUI = true)
         {
             parent.proIndicator.IsVisible = true;
             parent.proIndicator.Text = "正在加载书签...";
 
-            ContentPanel.Children.Clear();
-            if (tag == null)
-            {
-                foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
-                {
-                        ContentPanel.Children.Add(GenerateItemUI(item));
-                }
-            }
-            if (tag == BookmarkItem.UNREAD)
-            {   //只要不包含已读tag的都是未读
-                foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
-                {
-                    if (!Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)"))
-                        ContentPanel.Children.Add(GenerateItemUI(item));
-                }
-            }
-            else
-            {
-                foreach (BookmarkItem item in App.deliciousApi.LoadLinkItemsRecord())
-                {
-                    if (Regex.IsMatch(item.tag, "(^|\\W)" + tag + "($|\\W)"))
-                        ContentPanel.Children.Add(GenerateItemUI(item));
-                }
-            }
+            itemList.Clear();
+            itemList.AddRange(App.localFileCache.LoadBunchItemRecords(StatusTag));
 
+            if (isUpdateUI) UpdateUI();
             parent.proIndicator.IsVisible = false;
         }
 
+
         /// <summary>
-        /// 加载最近的链接
-        /// 每次加载10个链接，随着向下拉动逐渐增多.
-        /// 用全局变量count记录已加载的链接数
+        /// 加载服务器的链接信息
+        /// 绑定数据和界面，并更新界面
         /// </summary>
-        /// <param name="tag">加载包含指定tag的链接;若tag为null,则加载所有链接</param>
-        /// <remarks>当前未读项并不都带有未读tag,因此会漏选未读项</remarks>
-        private void LoadRecentLinks(string tag = null)
+        private void OnlineLoadUI(int offset, int count = -1)
         {
+            if (StatusTag == IndexPage.PageStatus.RECENT) return;
+
             parent.proIndicator.IsVisible = true;
             parent.proIndicator.Text = "正在加载书签...";
 
-            App.deliciousApi.GetAll(count, 10, tag).ContinueWith(t =>
+            OnlineLoad(offset, count);
+        }
+
+        private void OnlineLoad(int offset, int count = -1)
+        {
+            int defaultCount = 10;
+            Task<int> task = null;
+            if (StatusTag == IndexPage.PageStatus.UNREAD) task = App.pocketApi.GetUnRead(offset, count < 0 ? defaultCount : count);
+            else if (StatusTag == IndexPage.PageStatus.READ) task = App.pocketApi.GetArchive(offset, count < 0 ? defaultCount : count);
+            else if (StatusTag == IndexPage.PageStatus.STAR) task = App.pocketApi.GetStar(offset, count < 0 ? defaultCount : count);
+            else return;
+
+            task.ContinueWith(t =>
             {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
+                if (t.Status == TaskStatus.RanToCompletion)
                 {
-                    Dispatcher.BeginInvoke(() =>
+                    if (count == -1 && t.Result == defaultCount)
                     {
-                        if (t.Result.Count > 0)
+                        OnlineLoad(offset + defaultCount, -1);
+                    }
+                    else
+                    {
+                        Dispatcher.BeginInvoke(() =>
                         {
-                            OfflineLoad(tag);
-                            count += t.Result.Count;
-                        }//若返回零条链接,则不做处理.
-                        parent.proIndicator.IsVisible = false;
-                    });
+                            parent.proIndicator.IsVisible = false;
+                        });
+                    }
                 }
                 else if (t.Status == TaskStatus.Faulted)
                     Dispatcher.BeginInvoke(() =>
                     {
-                        if (t.Exception.InnerException.Message == DeliciousAPI.AUTHORITYERROR)
+                        if (App.pocketApi.IsSync)
                         {
-                            MessageBox.Show("请确认用户名和密码啊,亲~");
-//                            (parent as IndexPage).Login_Popup.IsOpen = true;
-                            parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
+                            if (t.Exception.InnerException.Message.Contains("401 (Unauthorized)"))
+                            {
+                                var boxresult = MessageBox.Show("未登录或登录过期，现在去登录？", "", MessageBoxButton.OKCancel);
+                                if (boxresult == MessageBoxResult.OK)
+                                {
+                                    parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
+                                }
+                            }
+                            else {
+                                MessageBox.Show("请求错误: " + t.Exception.InnerException.Message + "\n" + t.Exception.InnerException.StackTrace);
+                            }
+                            App.pocketApi.IsSync = false;
                         }
-                        else MessageBox.Show("网络状况不太好啊,亲~");
                         parent.proIndicator.IsVisible = false;
                     });
             });
         }
 
+        #region triggered events
         /// <summary>
-        /// 加载未读的链接.
-        /// 先加载所有的链接,根据DeliciousApi的处理,凡是不包含已读tag的均为未读.
+        /// 点击按钮，进入链接阅读
         /// </summary>
-        private void LoadUnReadedLinks()
+        private void ItemBtn_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
-            parent.proIndicator.IsVisible = true;
-            parent.proIndicator.Text = "正在加载书签...";
-
-            App.deliciousApi.GetAll(count, 10, null).ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (t.Result.Count > 0)
-                        {
-                            OfflineLoad(BookmarkItem.UNREAD);
-                            count += t.Result.Count;
-                        }//若返回零条链接,则不做处理.
-                        parent.proIndicator.IsVisible = false;
-                    });
-                }
-                else if (t.Status == TaskStatus.Faulted)
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (t.Exception.InnerException.Message == DeliciousAPI.AUTHORITYERROR)
-                        {
-                            MessageBox.Show("请确认用户名和密码啊,亲~");
-                            //                            (parent as IndexPage).Login_Popup.IsOpen = true;
-                            parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
-                        }
-                        else MessageBox.Show("网络状况不太好啊,亲~");
-                        parent.proIndicator.IsVisible = false;
-                    });
-            });
+            BookmarkItem it = (sender as Button).DataContext as BookmarkItem;
+            if (it.isUnReaded) it.isUnReaded = false;
+            string url = LocalFileCache.ContentEncoder(it.href);
+            parent.NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + url, UriKind.Relative));
         }
-
-
         /// <summary>
-        /// 根据书签内容生成显示到界面的控件
+        /// 点击右键菜单项，标为已读或未读
         /// </summary>
-        /// <param name="item"></param>
-        /// <returns>由两个按钮组成的控件，外包一层StackPanel</returns>
-        private UIElement GenerateItemUI(BookmarkItem item)
+        private void ReadMenuItem_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
-            StackPanel stack = new StackPanel()
-            {
-                Orientation = System.Windows.Controls.Orientation.Horizontal
-            };
-            Button b = new Button
-            {
-                Style = (Style)Resources["BookmarkItemButtonStyle"]
-            };
-            b.Tap += (param_sender, param_e) => //点击进入链接
-            {
-                BookmarkItem it = b.DataContext as BookmarkItem;
-                SetReaded(ref it);
-                string url = App.deliciousApi.ContentEncoder(item.href);
-                parent.NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + url, UriKind.Relative));
-
-//                if (it.isUnReaded.Equals("1")) it.isUnReaded = "0";
-            };
-            ContextMenu contextmenu = new ContextMenu();
-            MenuItem mark = new MenuItem(){ Header = "标记为已读/未读" };
-            mark.Tap += (s, e) =>
-            {
-                BookmarkItem mitem = (s as MenuItem).DataContext as BookmarkItem;
-                if (mitem.isUnReaded == "1") SetReaded(ref mitem);
-                else SetUnReaded(ref mitem);
-            };
-
-            MenuItem star = new MenuItem(){ Header = "收藏" };
-            star.Tap += (s, e) =>
-            {
-                BookmarkItem sitem = (s as MenuItem).DataContext as BookmarkItem;
-                SetStared(ref sitem);
-            };
-
-            MenuItem delitem = new MenuItem() { Header = "删除" };
-            delitem.Tap += (s, e) =>
-            {
-                BookmarkItem sitem = (s as MenuItem).DataContext as BookmarkItem;
-                App.deliciousApi.DeleteBookmark(sitem.href);
-                LocalRefresh();
-            };
-
-            contextmenu.Items.Add(mark);
-            contextmenu.Items.Add(star);
-            contextmenu.Items.Add(delitem);
-            ContextMenuService.SetContextMenu(stack, contextmenu);
-/*
-            b.Hold += (param_sender, param_e) => //长按改变阅读状态，已读/未读
-            {
-                BookmarkItem it = b.DataContext as BookmarkItem;
-                if (it.isUnReaded.Equals("0"))
-                {
-                    SetUnReaded(it);
-                    it.isUnReaded = "1";
-                }
-                else
-                {
-                    SetReaded(it);
-                    it.isUnReaded = "0";
-                }
-            };
- */ 
-            Button a = new Button
-            {
-                Style = (Style)Resources["IsReadItemButtonStyle"]
-            };
-            stack.Children.Add(a);
-            stack.Children.Add(b);
-            stack.DataContext = item;
-            return stack;
+            BookmarkItem mitem = (sender as MenuItem).DataContext as BookmarkItem;
+            if (mitem.isUnReaded) mitem.isUnReaded = false;
+            else mitem.isUnReaded = true;
         }
-
         /// <summary>
-        /// 设链接为已读.记录到本地,同步到网络.
+        /// 点击右键菜单项，标记收藏
         /// </summary>
-        private void SetReaded(ref BookmarkItem item)
+        private void StarMenuItem_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
-            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == false || item.isUnReaded == "1")
-            {
-                string tag = BookmarkItem.READ;
-                char[] sp = { ',', ' ' };
-                string[] sub = item.tag.Split(sp, 2);
-                foreach (string s in sub)
-                {
-                    string st = s.Trim();
-                    if (st.Equals(BookmarkItem.UNREAD) == false && st.Equals(BookmarkItem.READ) == false && st.Length > 0) tag += "," + st;
-                }
-                item.isUnReaded = "0";
-                item.tag = tag;
-                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                App.deliciousApi.SaveLinkItemRecord(item);
-
-                if (App.deliciousApi.IsSycn())
-                {
-                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                    {
-                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                        {
-                            if (t.Result != "done")
-                            {
-                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
-                            }
-                        }
-                        else if (t.Status == TaskStatus.Faulted)
-                        {
-                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
-                        }
-                    });
-                }
-            }
+            BookmarkItem sitem = (sender as MenuItem).DataContext as BookmarkItem;
+            if (sitem.isStar == false) sitem.isStar = true;
         }
-
         /// <summary>
-        /// 设链接为未读.记录到本地,同步到网络
+        /// 点击右键菜单项，删除链接项目
         /// </summary>
-        private void SetUnReaded(ref BookmarkItem item)
+        private void DeleteMenuItem_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
-            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.READ + "($|\\W)") == true || item.isUnReaded == "0")
-            {
-                string tag = BookmarkItem.UNREAD;
-                char[] sp = {',', ' '};
-                string[] sub = item.tag.Split(sp,2);
-                foreach (string s in sub)
-                {
-                    string st = s.Trim();
-                    if (st.Equals(BookmarkItem.UNREAD) == false && st.Equals(BookmarkItem.READ) == false && st.Length > 0) tag += "," + st;
-                }
-                item.isUnReaded = "1";
-                item.tag = tag;
-                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                App.deliciousApi.SaveLinkItemRecord(item);
-
-                if (App.deliciousApi.IsSycn())
-                {
-                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                    {
-                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                        {
-                            if (t.Result != "done")
-                            {
-                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
-                            }
-                        }
-                        else if (t.Status == TaskStatus.Faulted)
-                        {
-                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
-                        }
-                    });
-                }
-            }
-        }
-
-        private void SetStared(ref BookmarkItem item)
-        {
-            if (Regex.IsMatch(item.tag, "(^|\\W)" + BookmarkItem.STAR + "($|\\W)") == false)
-            {
-                item.tag += "," + BookmarkItem.STAR;
-                item.time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                App.deliciousApi.SaveLinkItemRecord(item);
-
-                if (App.deliciousApi.IsSycn())
-                {
-                    App.deliciousApi.AddBookmark(item).ContinueWith(t =>
-                    {
-                        if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
-                        {
-                            if (t.Result != "done")
-                            {
-                                Dispatcher.BeginInvoke(() => { MessageBox.Show(t.Result); });
-                            }
-                        }
-                        else if (t.Status == TaskStatus.Faulted)
-                        {
-                            Dispatcher.BeginInvoke(() => { MessageBox.Show("请检查网络链接;以及用户名和密码啊,亲~"); });
-                        }
-                    });
-                }
-            }
+            BookmarkItem sitem = (sender as MenuItem).DataContext as BookmarkItem;
+            App.localFileCache.DeleteBookmark(sitem);
+            App.pocketApi.DeleteItem(sitem);
+            UpdateUI();
         }
 
         /// <summary>
         /// 拉动更新
         /// </summary>
-        private void ContentScroll_GestureListener_Flick(object sender, FlickGestureEventArgs e)
+        private void refreshPanel_RefreshRequested(object sender, EventArgs e)
         {
-            if (e.Direction == Orientation.Vertical && e.VerticalVelocity < 0 &&
-                LinkListScroller.VerticalOffset + LinkListScroller.ViewportHeight >= LinkListScroller.ExtentHeight - 600)
-                LoadRecentLinks(StatusTag);
+            OnlineLoadUI(total, 10);
         }
-
+        #endregion triggered events
     }
 }

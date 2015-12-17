@@ -1,6 +1,6 @@
-﻿using ExtendRSS.Resources;
+﻿using SyncLinks.Resources;
 
-namespace ExtendRSS
+namespace SyncLinks
 {
     /// <summary>
     /// 提供对字符串资源的访问权。

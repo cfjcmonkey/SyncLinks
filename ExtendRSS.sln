@@ -1,7 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtendRSS", "ExtendRSS\ExtendRSS.csproj", "{26A7D7BF-F5F8-43AF-962A-6BB878A87A44}"
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncLinks", "ExtendRSS\SyncLinks.csproj", "{26A7D7BF-F5F8-43AF-962A-6BB878A87A44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,5 @@
 ﻿<phone:PhoneApplicationPage
-    x:Class="ExtendRSS.Views.IndexPage"
+    x:Class="SyncLinks.Views.IndexPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:phone="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone"
@@ -59,7 +59,7 @@
         </Popup>
         -->
         <!--枢轴控件-->
-        <phone:Pivot x:Name="PivotControl" Title="ExtendRSS" SelectionChanged="Pivot_SelectionChanged">
+        <phone:Pivot x:Name="PivotControl" Title="SyncLinks" SelectionChanged="Pivot_SelectionChanged">
             <phone:PivotItem Name="UnReadedViewer" Header="未读"/>
             <phone:PivotItem Name="StarViewer" Header="收藏" />
             <phone:PivotItem Name="RecentViewer" Header="最近"/>

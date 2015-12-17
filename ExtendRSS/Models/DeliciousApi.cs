@@ -12,7 +12,7 @@ using System.Xml.Serialization;
 using System.Text.RegularExpressions;
 using System.IO.IsolatedStorage;
 
-namespace ExtendRSS.Models
+namespace SyncLinks.Models
 {
     public class DeliciousAPI
     {

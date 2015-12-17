@@ -6,21 +6,25 @@ using System.Windows.Markup;
 using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
-using ExtendRSS.Resources;
-using ExtendRSS.Models;
+using SyncLinks.Resources;
+using SyncLinks.Models;
 using System.IO.IsolatedStorage;
+using System.Collections.Generic;
 
-namespace ExtendRSS
+namespace SyncLinks
 {
     public partial class App : Application
     {
+        public static IsolatedStorageFile store = IsolatedStorageFile.GetUserStoreForApplication();
+        public static PocketAPI pocketApi = new PocketAPI();
+        public static LocalFileCache localFileCache = new LocalFileCache();
+
         /// <summary>
         ///提供对电话应用程序的根框架的轻松访问。
         /// </summary>
         /// <returns>电话应用程序的根框架。</returns>
         public static TransitionFrame RootFrame { get; private set; }
-        public static DeliciousAPI deliciousApi { get { return Api; } }
-        static DeliciousAPI Api = new DeliciousAPI();
+
 
         /// <summary>
         /// Application 对象的构造函数。
@@ -83,6 +87,7 @@ namespace ExtendRSS
         // 此代码在停用应用程序时不执行
         private void Application_Closing(object sender, ClosingEventArgs e)
         {
+            localFileCache.SaveAllIndex(); //
         }
 
         // 导航失败时执行的代码
@@ -120,6 +125,8 @@ namespace ExtendRSS
             // 屏幕保持活动状态，直到准备呈现应用程序时。
             RootFrame = new TransitionFrame();
             RootFrame.Navigated += CompleteInitializePhoneApplication;
+
+            RootFrame.UriMapper = new Models.AssociationUriMapper();
 
             // 处理导航故障
             RootFrame.NavigationFailed += RootFrame_NavigationFailed;

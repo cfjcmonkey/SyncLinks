@@ -8,9 +8,9 @@ using System.Windows.Navigation;
 using System.Threading.Tasks;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
-using ExtendRSS.Models;
+using SyncLinks.Models;
 
-namespace ExtendRSS.Views
+namespace SyncLinks.Views
 {
     public partial class NotePage : PhoneApplicationPage
     {
@@ -24,8 +24,8 @@ namespace ExtendRSS.Views
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
             url = NavigationContext.QueryString["url"].ToString();
-            url = App.deliciousApi.ContentDecoder(url);
-            string text = App.deliciousApi.LoadNote(url);
+            url = LocalFileCache.ContentDecoder(url);
+            string text = LocalFileCache.LoadNote(url);
 //            BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
 //            string text = item.extended;
             if (text == null || text.Length == 0) text = url + "\n\n";
@@ -40,7 +40,7 @@ namespace ExtendRSS.Views
                 if (App.RootFrame.CanGoBack) App.RootFrame.GoBack();
                 else
                 {
-                    string tmp = App.deliciousApi.ContentEncoder(url);
+                    string tmp = LocalFileCache.ContentEncoder(url);
                     NavigationService.Navigate(new Uri("/Views/BrowserPage.xaml?url=" + tmp, UriKind.Relative));
                 }
             }
@@ -55,13 +55,10 @@ namespace ExtendRSS.Views
         /// <param name="e"></param>
         private void NavigationOutTransition_BeginTransition(object sender, RoutedEventArgs e)
         {
-            App.deliciousApi.SaveNote(url, Txt_NoteContent.Text);
+            LocalFileCache.SaveNote(url, Txt_NoteContent.Text);
 
-            if (App.deliciousApi.IsSycn())
-            {
-                BookmarkItem item = App.deliciousApi.LoadLinkItemRecord(url);
-                item.extended = Txt_NoteContent.Text;
-                App.deliciousApi.SaveLinkItemRecord(item);
+            BookmarkItem item = App.localFileCache.GetBookmarkItem(url);
+            item.extended = Txt_NoteContent.Text;
                 //App.deliciousApi.AddBookmark(item).ContinueWith(t =>
                 //{
                 //    if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
@@ -77,7 +74,6 @@ namespace ExtendRSS.Views
                 //        Dispatcher.BeginInvoke(() => { MessageBox.Show("同步失败...检查网络或用户名和密码"); });
                 //    }
                 //});
-            }
         }
 
     }
