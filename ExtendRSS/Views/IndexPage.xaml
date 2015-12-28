@@ -58,6 +58,38 @@
             </Grid>
         </Popup>
         -->
+        <!--添加链接框-->
+        <Popup Name="AddBookmark_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Grid x:Name="TitleContent" HorizontalAlignment="Center" Margin="0,-300,0,0" Height="500" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Row="0" Background="Black" Opacity="0.8"/>
+                <Grid Grid.Row="1" Background="Black">
+                    <TextBlock Grid.Column="0" TextWrapping="Wrap"  Text="链接URL"  HorizontalAlignment="Center" Margin="15,0,0,0" FontSize="36"/>
+                </Grid>
+                <Grid Grid.Row="2" Background="Black">
+                    <TextBox x:Name="Txt_URL" HorizontalAlignment="Center"  MinHeight="70" Width="472" TextWrapping="Wrap"/>
+                </Grid>
+                <Grid Grid.Row="3" Background="Black" HorizontalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" x:Name="Btn_OK" Content="确定" Margin="32,0,32,0" Click="Btn_OK_Click"/>
+                    <Button Grid.Column="1" x:Name="Btn_Cancel" Content="取消" Margin="32,0,32,0" Click="Btn_Cancel_Click"/>
+                </Grid>
+                <Grid Grid.Row="4" Background="Black" Opacity="0.8"/>
+            </Grid>
+        </Popup>
+        
         <!--枢轴控件-->
         <phone:Pivot x:Name="PivotControl" Title="SyncLinks" SelectionChanged="Pivot_SelectionChanged">
             <phone:PivotItem Name="UnReadedViewer" Header="未读"/>
@@ -71,6 +103,7 @@
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Minimized">
             <shell:ApplicationBarIconButton Text="设置" IconUri="/Assets/feature.settings.png" Click="AppBarIconButton_Set_Click" />
             <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="AppBarIconButton_Refresh_Click" />
+            <shell:ApplicationBarIconButton Text="添加" IconUri="/Assets/add.png" Click="AppBarIconButton_Add_Click"/>
         </shell:ApplicationBar>
     </phone:PhoneApplicationPage.ApplicationBar>
 </phone:PhoneApplicationPage>

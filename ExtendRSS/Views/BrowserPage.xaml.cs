@@ -12,19 +12,27 @@ using SyncLinks.Models;
 using System.Xml;
 using System.Xml.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace SyncLinks
 {
     public partial class BrowserPage : PhoneApplicationPage
     {
-        private string url, orgUrl;
-        string googleUrl = "http://google.com/gwt/x?noimg=1&u=";
-        string goolehost = "http://google.com";
-        string baiduUrl = "http://gate.baidu.com/tc?from=opentc&src=";
-        string baiduhost = "http://gate.baidu.com";
+        static string googleUrl = "http://google.com/gwt/x?noimg=1&u=";
+        static string googlehost = "http://google.com";
+        static string baiduUrl = "http://gate.baidu.com/tc?from=opentc&src=";
+        static string baiduhost = "http://gate.baidu.com";
+        static Regex regUrlHead = new Regex(@"https?://(m|www)\.", RegexOptions.Compiled);
+
         ProgressIndicator proIndicator;
         BookmarkItem item;
         bool IsRefresh;
+        string url;
+        string orgUrl { get { return item == null ? "" : item.href; } }
+
+        public bool CanGoBack { get { return webBrowser.CanGoBack; } }
+        public bool CanGoForward { get { return webBrowser.CanGoForward; } }
+        public bool IsNotAdded { get { return item != null && !LocalFileCache.IsExits(item.href); } }
 
         public BrowserPage()
         {
@@ -43,33 +51,36 @@ namespace SyncLinks
 
         private void PhoneApplicationPage_Loaded(object sender, RoutedEventArgs e)
         {
-            Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
-            Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
-            Btn_Add.IsEnabled = true;
+            Btn_PrePage.IsEnabled = CanGoBack;
+            Btn_NextPage.IsEnabled = CanGoForward;
+            Btn_Add.IsEnabled = IsNotAdded;
             AddBookmark_Popup.IsOpen = false;
             IsRefresh = false;
             
-            orgUrl = NavigationContext.QueryString["url"].ToString();
-            orgUrl = LocalFileCache.ContentDecoder(orgUrl);
-            item = App.localFileCache.GetBookmarkItem(orgUrl);
-            if (item.cacheHtml != null)
+            url = NavigationContext.QueryString["url"].ToString();
+            url = LocalFileCache.ContentDecoder(url);
+            item = App.localFileCache.GetBookmarkItem(url);
+            if (!String.IsNullOrEmpty(item.cacheHtml))
             {
-                url = orgUrl;
                 webBrowser.NavigateToString(item.cacheHtml);
             }
             else
             {
-                url = baiduUrl + orgUrl;
+                //url = baiduUrl + url;
                 webBrowser.Navigate(new Uri(url, UriKind.Absolute));
             }
             App.localFileCache.UpdateRecentIndex(item);
         }
 
+        private void webBrowser_Navigating(object sender, NavigatingEventArgs e)
+        {
+            proIndicator.IsVisible = true;
+            proIndicator.Text = "加载" + e.Uri == null ? url : e.Uri.OriginalString;
+        }
+
         private void webBrowser_Navigated(object sender, NavigationEventArgs e)
         {
             proIndicator.IsVisible = false;
-            Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
-            Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
 
             if (e.Uri != null && e.Uri.OriginalString.Length > 0)
             {
@@ -77,32 +88,50 @@ namespace SyncLinks
                 if (url.StartsWith("about:"))
                 {
                     url = url.Remove(0, "about:".Length);
-                    if ((goolehost + url).StartsWith(googleUrl)) url = goolehost + url;
+                    if ((googlehost + url).StartsWith(googleUrl)) url = googlehost + url;
                     else if ((baiduhost + url).StartsWith(baiduUrl)) url = baiduhost + url;
                     webBrowser.Navigate(new Uri(url, UriKind.Absolute));
+                    return;
                 }
             }
 
-            string curUrl = url;
-            if (curUrl.StartsWith(googleUrl)) curUrl = curUrl.Remove(0, googleUrl.Length);
-            if (curUrl.StartsWith(baiduUrl)) curUrl = curUrl.Remove(0, baiduUrl.Length);
-            Btn_Add.IsEnabled = !LocalFileCache.IsExits(curUrl);
-
-            if (item.cacheHtml == null || ( url.EndsWith(orgUrl) && IsRefresh))
+            if (UrlEqual(url, item.href) && (String.IsNullOrEmpty(item.cacheHtml) || IsRefresh))
             {
                 item.cacheHtml = webBrowser.SaveToString();
             }
             IsRefresh = false;
+            Btn_PrePage.IsEnabled = CanGoBack;
+            Btn_NextPage.IsEnabled = CanGoForward;
+            Btn_Add.IsEnabled = IsNotAdded;
         }
 
-        private void webBrowser_Navigating(object sender, NavigatingEventArgs e)
+
+        bool CleanUrl(ref string paramUrl)
         {
-            proIndicator.IsVisible = true;
-            proIndicator.Text = "正在加载网页";
-            Btn_Add.IsEnabled = false;
+            bool isChange = false;
+            if (paramUrl.StartsWith(googleUrl))
+            {
+                paramUrl = paramUrl.Remove(0, googleUrl.Length);
+                isChange = true;
+            }
+            if (paramUrl.StartsWith(baiduUrl))
+            {
+                paramUrl = paramUrl.Remove(0, baiduUrl.Length);
+                isChange = true;
+            }
+            return isChange;
         }
 
-        private void Btn_GoogleEncode_Click(object sender, EventArgs e)
+        bool UrlEqual(string url1, string url2)
+        {
+            CleanUrl(ref url1);
+            CleanUrl(ref url2);
+            url1 = regUrlHead.Replace(url1, "").Trim().ToLower();
+            url2 = regUrlHead.Replace(url2, "").Trim().ToLower();
+            return url1 == url2;
+        }
+
+        private void Btn_PageEncode_Click(object sender, EventArgs e)
         {
             IsRefresh = true;
             if (url.StartsWith(googleUrl) == true)
@@ -118,7 +147,7 @@ namespace SyncLinks
             }
             else
             {
-                url = googleUrl + url;
+                url = baiduUrl + url;
             }
             webBrowser.Navigate(new Uri(url));
         }
@@ -134,8 +163,6 @@ namespace SyncLinks
             if (webBrowser.CanGoBack)
             {
                 webBrowser.GoBack();
-                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
-                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
             }
         }
 
@@ -144,8 +171,6 @@ namespace SyncLinks
             if (webBrowser.CanGoForward)
             {
                 webBrowser.GoForward();
-                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
-                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
             }
         }
 
@@ -172,6 +197,7 @@ namespace SyncLinks
             App.pocketApi.AddNewItem(item);
             MessageBox.Show("添加完成.");
             AddBookmark_Popup.IsOpen = false;
+            Btn_Add.IsEnabled = IsNotAdded;
         }
 
         private void Btn_Cancel_Click(object sender, EventArgs e)
@@ -182,17 +208,12 @@ namespace SyncLinks
         private void Btn_AddBookmark_Click(object sender, EventArgs e)
         {
             AddBookmark_Popup.IsOpen = true;
-            try
-            {
-                XDocument doc = XDocument.Parse(webBrowser.SaveToString());
-                string space = (doc.FirstNode as XElement).Name.NamespaceName;
-                XElement ele = doc.Descendants("{" + space + "}" + "title").FirstOrDefault();
-                Txt_Title.Text = ele.Value;
-            }
-            catch
-            {
-                Txt_Title.Text = "";
-            }
+            XDocument doc = XDocument.Parse(webBrowser.SaveToString());
+            string space = (doc.FirstNode as XElement).Name.NamespaceName;
+            var results = doc.Descendants("{" + space + "}" + "title");
+            if (results != null && results.Count<XElement>() > 0)
+                Txt_Title.Text = results.First<XElement>().Value;
+            else Txt_Title.Text = "";
         }
 
         private void GestureListener_Flick(object sender, FlickGestureEventArgs e)
@@ -216,8 +237,6 @@ namespace SyncLinks
             if (webBrowser.CanGoBack)
             {
                 webBrowser.GoBack();
-                Btn_PrePage.IsEnabled = webBrowser.CanGoBack;
-                Btn_NextPage.IsEnabled = webBrowser.CanGoForward;
                 e.Cancel = true;
             }
         }

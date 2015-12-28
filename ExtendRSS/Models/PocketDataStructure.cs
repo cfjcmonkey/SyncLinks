@@ -68,6 +68,30 @@ namespace SyncLinks.Models
     }
 
     [DataContract]
+    public class AddPocketItem
+    {
+        [DataMember]
+        public string item_id { get; set; }
+        [DataMember]
+        public string resolved_id { get; set; }
+        [DataMember]
+        public string normal_url { get; set; }
+        [DataMember]
+        public string resolved_url { get; set; }
+        [DataMember]
+        public string title { get; set; }
+    }
+
+    [DataContract]
+    public class AddResponsePackage
+    {
+        [DataMember]
+        public AddPocketItem item { get; set; }
+        [DataMember]
+        public int status { get; set; }
+    }
+
+    [DataContract]
     public class GetResponsePackage
     {
         [DataMember]

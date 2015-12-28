@@ -25,25 +25,27 @@ namespace SyncLinks.Models
     /// </summary>
     public class PocketAPI
     {
-        static readonly string consumer_key = "";      
+        static readonly string consumer_key = "48664-97ee937a868f84d4c422db40";      
         static readonly string redirect_uri = "synclinks:authorizationFinished";
         static readonly string host = "https://getpocket.com";
         Preference preference;
         Regex tokenCodeReg = new Regex("\"code\":\"(.+?)\"", RegexOptions.Compiled);
         Regex accessTokenReg = new Regex("\"access_token\":\"(.+?)\",\"username\":\"(.+?)\"", RegexOptions.Compiled);
         Regex statusReg = new Regex("\"status\":(\\d+)", RegexOptions.Compiled);
+        Regex itemIDReg = new Regex("\"item_id\":\"(.+?)\"", RegexOptions.Compiled);
 
         DataContractJsonSerializer pocketItem_ser = new DataContractJsonSerializer(typeof(PocketItem));
-        DataContractJsonSerializer getResponsePackage_ser = 
-            new DataContractJsonSerializer(typeof(GetResponsePackage),
-                                            new DataContractJsonSerializerSettings() { UseSimpleDictionaryFormat = true });
+//        DataContractJsonSerializer getResponsePackage_ser = 
+//            new DataContractJsonSerializer(typeof(GetResponsePackage),
+//                                            new DataContractJsonSerializerSettings() { UseSimpleDictionaryFormat = true });
         DataContractJsonSerializer tokenRequestPackage_ser = new DataContractJsonSerializer(typeof(TokenRequestPackage));
+        DataContractJsonSerializer addResponsePackage_ser = new DataContractJsonSerializer(typeof(AddResponsePackage));
 
         public string RequestToken { get { return preference.RequestToken; } }
         public string UserName { get { return preference.Username; } }
         public string AccessToken { get { return preference.AccessToken; } }
 
-        public bool IsSync { get; set; }
+        public bool IsSync { get; set; } //同步任何数据前，先查此项
 
         public PocketAPI()
         {
@@ -152,9 +154,12 @@ namespace SyncLinks.Models
             jsonSB.AppendItem("item_id", item_id);
 //            string time = "";
             string content = "[" + jsonSB.Output() + "]";
-            content = HttpUtility.UrlEncode(content);
-            url += String.Format("?actions={0}&access_token={1}&consumer_key={2}", content, AccessToken, consumer_key);
-            string result = await HttpTool.PostStringAsync(url, "");
+            jsonSB.Clear();
+            jsonSB.AppendItem("actions", content, true);
+            jsonSB.AppendItem("access_token", AccessToken);
+            jsonSB.AppendItem("consumer_key", consumer_key);
+
+            string result = await HttpTool.PostStringAsync(url, jsonSB.Output());
             var match = statusReg.Match(result);
             if (!(match.Success && match.Groups[1].Value == "1"))
                 Debug.WriteLine("Error in ModifyItem, result = {0}", result);
@@ -171,8 +176,13 @@ namespace SyncLinks.Models
             string data = jsonSB.Output();
             string result = await HttpTool.PostStringAsync(url, data);
             var match = statusReg.Match(result);
-            if (!(match.Success && match.Groups[1].Value == "1"))
-                Debug.WriteLine("Error in AddItem, result = {0}", result);
+            if (match.Success && match.Groups[1].Value == "1")
+            {
+                var response = Newtonsoft.Json.JsonConvert.DeserializeObject<AddResponsePackage>(result);
+                var item = response.item;
+                App.localFileCache.UpdateItem(item.normal_url, item.title, item.item_id);
+            }                
+            else Debug.WriteLine("Error in AddItem, result = {0}", result);
             IsSync = true;
         }
 
@@ -349,11 +359,11 @@ namespace SyncLinks.Models
     {
         StringBuilder sb = new StringBuilder();
 
-        public void AppendItem(string key, Object value)
+        public void AppendItem(string key, Object value, bool noQuote = false)
         {
             if (sb.Length == 0) sb.Append("{");
             else sb.Append(",");
-            if ((value is Int32) || (value is Double) || (value is Boolean))
+            if ((value is Int32) || (value is Double) || (value is Boolean) || noQuote)
                 sb.Append("\"" + key + "\":" + value);
             else sb.Append("\"" + key + "\":\"" + value + "\""); 
         }

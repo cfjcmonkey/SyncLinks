@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
@@ -14,8 +16,11 @@ namespace SyncLinks.Models
     public class LocalFileCache
     {
         private DataContractJsonSerializer bookmarkItem_ser;
-        private ItemListIndex itemListIndex;
         private Dictionary<string, BookmarkItem> bookmarkItemPool;
+        private BookmarkItemList unreadList;
+        private BookmarkItemList readList;
+        private BookmarkItemList recentList;
+        private BookmarkItemList starList;
 
         public delegate void ListIndexChangedEventHandler(Views.IndexPage.PageStatus pageStatus);
         public event ListIndexChangedEventHandler ListIndexChanged;
@@ -23,18 +28,19 @@ namespace SyncLinks.Models
         public LocalFileCache()
         {
             bookmarkItem_ser = new DataContractJsonSerializer(typeof(BookmarkItem));
-            itemListIndex = new ItemListIndex();
             bookmarkItemPool = new Dictionary<string, BookmarkItem>();
         }
 
         #region Creation of Bookmark
         public BookmarkItem GetBookmarkItem(string url)
         {
-            url = url.Trim().ToLower();
+            url = url.Trim();;
             if (bookmarkItemPool.ContainsKey(url)) return bookmarkItemPool[url];
             var item = LoadLinkItemRecord(url);
             if (item != null) {
                 bookmarkItemPool.Add(url, item);
+                item.PropertyChanged += App.pocketApi.BookmarkItem_PropertyChanged;
+                item.PropertyChanged += App.localFileCache.BookmarkItem_PropertyChanged;
             }
             return item;
         }
@@ -42,14 +48,23 @@ namespace SyncLinks.Models
         /// <returns>返回是否添加了新元素到列表</returns>
         public bool AddBookmarkItem(ref BookmarkItem item, int position = 0, bool isBunchAdd = false)
         {
-            string url = item.href.Trim().ToLower();
+            string url = item.href.Trim();
             if (bookmarkItemPool.ContainsKey(url))
-            {
+            {   //更新原链接元素
+                var oldItem = bookmarkItemPool[url];
+                oldItem.description = item.description;
+                oldItem.hash = item.hash;
+                oldItem.isUnReaded = item.isUnReaded;
+                oldItem.isStar = item.isStar;
+                if (!String.IsNullOrWhiteSpace(item.cacheHtml)) oldItem.cacheHtml = item.cacheHtml;
+
                 item.Dispose();
-                item = bookmarkItemPool[url];
+                item = oldItem;
             }
             else {
                 bookmarkItemPool.Add(url, item);
+                item.PropertyChanged += App.pocketApi.BookmarkItem_PropertyChanged;
+                item.PropertyChanged += App.localFileCache.BookmarkItem_PropertyChanged;
                 SaveLinkItemRecord(item);
             }
             return UpdateIndex(item, position, "", isBunchAdd);
@@ -59,8 +74,11 @@ namespace SyncLinks.Models
         public BookmarkItem AddBookmarkItem(string url, string description, 
                                             string cacheHtml = "", int position = 0)
         {
-            url = url.Trim().ToLower();
-            if (bookmarkItemPool.ContainsKey(url)) return bookmarkItemPool[url];
+            url = url.Trim();
+            if (bookmarkItemPool.ContainsKey(url))
+            {   //更新原链接元素
+                UpdateItem(url, description, "", cacheHtml);
+            }
             var item = new BookmarkItem(
                 url,
                 description,
@@ -70,6 +88,8 @@ namespace SyncLinks.Models
                 cacheHtml
             );
             bookmarkItemPool.Add(url, item);
+            item.PropertyChanged += App.pocketApi.BookmarkItem_PropertyChanged;
+            item.PropertyChanged += App.localFileCache.BookmarkItem_PropertyChanged;
             SaveLinkItemRecord(item);
             UpdateIndex(item, position, "", false);
             return item;
@@ -98,6 +118,19 @@ namespace SyncLinks.Models
 
         #endregion Creation of Bookmark
 
+        public bool UpdateItem(string url, string description, string hash = "", string cacheHtml = "")
+        {
+            url = url.Trim();
+            if (bookmarkItemPool.ContainsKey(url))
+            {   //更新原链接元素
+                var oldItem = bookmarkItemPool[url];
+                oldItem.description = description;
+                if (!String.IsNullOrWhiteSpace(cacheHtml)) oldItem.cacheHtml = cacheHtml;
+                if (!String.IsNullOrWhiteSpace(hash)) oldItem.hash = hash;
+                return true;
+            }else return false;
+        }
+
         public void DeleteBookmark(BookmarkItem item)
         {
             //delete in item pool
@@ -106,55 +139,39 @@ namespace SyncLinks.Models
                 bookmarkItemPool.Remove(item.href);
             }
             //delete in storage
-            string path = item.href.GetHashCode().ToString();
+            string path = URL2Path(item.href);
             if (App.store.FileExists(path + "/BookmarkItemRecord.json"))
                 App.store.DeleteFile(path + "/BookmarkItemRecord.json");
             //delete in index
-            if (item.isUnReaded)
-            {
-                if (itemListIndex.UNReadIndex.Remove(item.href) && ListIndexChanged != null)
-                    ListIndexChanged(Views.IndexPage.PageStatus.UNREAD);
-            }
-            else
-            {
-                if (itemListIndex.ReadIndex.Remove(item.href) && ListIndexChanged != null)
-                    ListIndexChanged(Views.IndexPage.PageStatus.READ);
-            }
-            if (item.isStar)
-            {
-                if (itemListIndex.StarIndex.Remove(item.href) && ListIndexChanged != null)
-                    ListIndexChanged(Views.IndexPage.PageStatus.STAR);
-            }
+            if (item.isUnReaded) GetItemListHolder(Views.IndexPage.PageStatus.UNREAD).Remove(item);
+            else GetItemListHolder(Views.IndexPage.PageStatus.READ).Remove(item);
+            if (item.isStar) GetItemListHolder(Views.IndexPage.PageStatus.STAR).Remove(item);
         }
 
-        public List<BookmarkItem> LoadBunchItemRecords(Views.IndexPage.PageStatus pageStatus)
+        public ObservableCollection<BookmarkItem> LoadItemList(Views.IndexPage.PageStatus pageStatus)
         {
-            List<string> index = null;
-            if (pageStatus == Views.IndexPage.PageStatus.UNREAD) index = itemListIndex.UNReadIndex;
-            else if (pageStatus == Views.IndexPage.PageStatus.READ) index = itemListIndex.ReadIndex;
-            else if (pageStatus == Views.IndexPage.PageStatus.RECENT) index = itemListIndex.RecentIndex;
-            else if (pageStatus == Views.IndexPage.PageStatus.STAR) index = itemListIndex.StarIndex;
-            else index = new List<string>();
-            List<BookmarkItem> itemList = new List<BookmarkItem>();
-            foreach (var url in index)
-            {
-                var item = GetBookmarkItem(url);
-                if (item != null) itemList.Add(item);
-            }
-            return itemList;
+            var listHolder = GetItemListHolder(pageStatus);
+            if (listHolder != null) return listHolder.itemList;
+            else return null;
         }
 
-        public void SaveIndexes(Views.IndexPage.PageStatus pageStatus, List<BookmarkItem> itemList = null)
+        public ObservableCollection<BookmarkItem> ReLoadItemList(Views.IndexPage.PageStatus pageStatus)
         {
-            itemListIndex.SaveIndex(pageStatus, itemList);
+            var listHolder = GetItemListHolder(pageStatus);
+            if (listHolder != null)
+            {
+                listHolder.LoadIndex();
+                return listHolder.itemList;
+            }
+            else return null;
         }
 
         public void SaveAllIndex()
         {
-            itemListIndex.SaveIndex(Views.IndexPage.PageStatus.READ);
-            itemListIndex.SaveIndex(Views.IndexPage.PageStatus.UNREAD);
-            itemListIndex.SaveIndex(Views.IndexPage.PageStatus.RECENT);
-            itemListIndex.SaveIndex(Views.IndexPage.PageStatus.STAR);
+            if (unreadList != null) unreadList.SaveIndex();
+            if (readList != null) readList.SaveIndex();
+            if (recentList != null) recentList.SaveIndex();
+            if (starList != null) starList.SaveIndex();
         }
 
         public void BookmarkItem_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -168,95 +185,67 @@ namespace SyncLinks.Models
 
         public void UpdateRecentIndex(BookmarkItem item)
         {
-            itemListIndex.RecentIndex.Insert(0, item.href);
-            if (ListIndexChanged != null)
-                ListIndexChanged(Views.IndexPage.PageStatus.RECENT);
+            GetItemListHolder(Views.IndexPage.PageStatus.RECENT).Insert(item, 0);
         }
 
         private bool UpdateIndex(BookmarkItem item, int position, string property, bool isBunchUpdate = false)
         {
+            if (item == null) return false;
             bool ret = false;
             if (property == "" || property == "isUnReaded")
             {
                 if (item.isUnReaded)
                 {
-                    if (itemListIndex.ReadIndex.Remove(item.href))
-                    {
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.READ);
-                        }
-                        ret = true;
-                    }
-                    if (itemListIndex.UNReadIndex.Count <= position || itemListIndex.UNReadIndex[position] != item.href)
-                    {
-                        if (position < itemListIndex.UNReadIndex.Count)
-                            itemListIndex.UNReadIndex.Insert(position, item.href);
-                        else itemListIndex.UNReadIndex.Add(item.href); 
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.READ);
-                        }
-                        ret = true;
-                    }
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.READ).Remove(item)) ret = true;
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.UNREAD).Insert(item, position)) ret = true;
                 }
                 else
                 {
-                    if (itemListIndex.UNReadIndex.Remove(item.href))
-                    {
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.UNREAD);
-                        }
-                        ret = true;
-                    }
-                    if (itemListIndex.ReadIndex.Count <= position || itemListIndex.ReadIndex[position] != item.href)
-                    {
-                        if (position < itemListIndex.ReadIndex.Count)
-                            itemListIndex.ReadIndex.Insert(position, item.href);
-                        else itemListIndex.ReadIndex.Add(item.href);
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.READ);
-                        }
-                        ret = true;
-                    }
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.UNREAD).Remove(item)) ret = true;
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.READ).Insert(item, position)) ret = true;
                 }
             }
             if (property == "" || property == "isStar")
             {
                 if (item.isStar)
                 {
-                    if (itemListIndex.StarIndex.Count <= position || itemListIndex.StarIndex[position] != item.href)
-                    {
-                        if (position < itemListIndex.StarIndex.Count)
-                            itemListIndex.StarIndex.Insert(position, item.href);
-                        else itemListIndex.StarIndex.Add(item.href);
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.STAR);
-                        }
-                        ret = true;
-                    }
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.STAR).Insert(item, position)) ret = true;
                 }
                 else
                 {
-                    if (itemListIndex.StarIndex.Remove(item.href))
-                    {
-                        if (!isBunchUpdate && ListIndexChanged != null)
-                        {
-                            ListIndexChanged(Views.IndexPage.PageStatus.STAR);
-                        }
-                        ret = true;
-                    }
+                    if (GetItemListHolder(Views.IndexPage.PageStatus.STAR).Remove(item)) ret = true;
                 }
             }
             return ret;
         }
 
+        private BookmarkItemList GetItemListHolder(Views.IndexPage.PageStatus pageStatus)
+        {
+            if (pageStatus == Views.IndexPage.PageStatus.UNREAD)
+            {
+                if (unreadList == null) unreadList = new BookmarkItemList(Views.IndexPage.PageStatus.UNREAD);
+                return unreadList;
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.READ)
+            {
+                if (readList == null) readList = new BookmarkItemList(Views.IndexPage.PageStatus.READ);
+                return readList;
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.RECENT)
+            {
+                if (recentList == null) recentList = new BookmarkItemList(Views.IndexPage.PageStatus.RECENT);
+                return recentList;
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.STAR)
+            {
+                if (starList == null) starList = new BookmarkItemList(Views.IndexPage.PageStatus.STAR);
+                return starList;
+            }else return null;
+        }
+
         private BookmarkItem LoadLinkItemRecord(string url)
         {
-            string path = url.GetHashCode().ToString();
+            string path = URL2Path(url);
             if (App.store.FileExists(path + "/BookmarkItemRecord.json"))
             {
                 using (var s = App.store.OpenFile(path + "/BookmarkItemRecord.json", FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -270,7 +259,7 @@ namespace SyncLinks.Models
 
         private void SaveLinkItemRecord(BookmarkItem item)
         {
-            string path = item.href.GetHashCode().ToString();
+            string path = URL2Path(item.href);
             if (App.store.DirectoryExists(path) == false)
                 App.store.CreateDirectory(path);
             using (var s = App.store.CreateFile(path + "/BookmarkItemRecord.json"))
@@ -279,7 +268,7 @@ namespace SyncLinks.Models
 
         public static bool IsExits(string url)
         {
-            return App.store.FileExists(url.GetHashCode().ToString() + "/BookmarkItemRecord.json");
+            return App.store.FileExists(URL2Path(url) + "/BookmarkItemRecord.json");
         }
 
         /// <summary>
@@ -287,7 +276,7 @@ namespace SyncLinks.Models
         /// </summary>
         public static string LoadNote(string url)
         {
-            string path = url.GetHashCode().ToString();
+            string path = URL2Path(url);
             if (App.store.FileExists(path + "/Note.xml"))
             {
                 using (var s = new StreamReader(App.store.OpenFile(path + "/Note.xml", FileMode.Open, FileAccess.Read, FileShare.Read)))
@@ -301,7 +290,7 @@ namespace SyncLinks.Models
         /// </summary>
         public static void SaveNote(string url, string content)
         {
-            string path = url.GetHashCode().ToString();
+            string path = URL2Path(url);
             if (App.store.DirectoryExists(path) == false)
                 App.store.CreateDirectory(path);
             using (var s = new StreamWriter(App.store.CreateFile(path + "/Note.xml")))
@@ -317,13 +306,13 @@ namespace SyncLinks.Models
                 if (App.store.FileExists(i + "/BookmarkItemRecord.json"))
                 {
                     App.store.DeleteFile(i + "/BookmarkItemRecord.json");
+                    //App.store.DeleteDirectory(i);
                 }
             //            store.DeleteFile(store.GetFileNames("*/BookmarkItemRecord.xml"));            
-            itemListIndex.ClearAllIndexes();
-            ListIndexChanged(Views.IndexPage.PageStatus.READ);
-            ListIndexChanged(Views.IndexPage.PageStatus.UNREAD);
-            ListIndexChanged(Views.IndexPage.PageStatus.RECENT);
-            ListIndexChanged(Views.IndexPage.PageStatus.STAR);
+            GetItemListHolder(Views.IndexPage.PageStatus.UNREAD).ClearIndex();
+            GetItemListHolder(Views.IndexPage.PageStatus.READ).ClearIndex();
+            GetItemListHolder(Views.IndexPage.PageStatus.RECENT).ClearIndex();
+            GetItemListHolder(Views.IndexPage.PageStatus.STAR).ClearIndex();
         }
 
         #region Utility Function
@@ -356,114 +345,122 @@ namespace SyncLinks.Models
                 return content;
             }
         }
+
+        static Regex urlcharReg = new Regex(@"[\\/:\*\?<>\|]", RegexOptions.Compiled);
+        public static string URL2Path(string url)
+        {
+            return urlcharReg.Replace(url, " ");
+        }
         #endregion Utility Function
     }
 
-    public class ItemListIndex
+    public class BookmarkItemList
     {
-        DataContractJsonSerializer list_ser = new DataContractJsonSerializer(typeof(List<string>));
+        static DataContractJsonSerializer list_ser = new DataContractJsonSerializer(typeof(List<string>));
 
-        public List<string> UNReadIndex { get; set; }
-        public List<string> ReadIndex { get; set; }
-        public List<string> RecentIndex { get; set; }
-        public List<string> StarIndex { get; set; }
+        public ObservableCollection<BookmarkItem> itemList { get; set; }
+        private HashSet<string> itemHashSet;
+        public Views.IndexPage.PageStatus pageStatus { get; set; }
 
-        public ItemListIndex()
+        public BookmarkItemList(Views.IndexPage.PageStatus status)
         {
-            LoadIndexes();
+            this.pageStatus = status;
+            itemList = new ObservableCollection<BookmarkItem>();
+            itemHashSet = new HashSet<string>();
+            LoadIndex();
         }
 
-        public void LoadIndexes()
+        public void LoadIndex()
         {
-            string filename = "unread_index.dat";
-            if (App.store.FileExists(filename))
-            {
-                using (var stream = App.store.OpenFile(filename, FileMode.Open))
-                {
-                    UNReadIndex = list_ser.ReadObject(stream) as List<string>;
-                }
-            }
-            else UNReadIndex = new List<string>();
-            filename = "read_index.dat";
-            if (App.store.FileExists(filename))
-            {
-                using (var stream = App.store.OpenFile(filename, FileMode.Open))
-                {
-                    ReadIndex = list_ser.ReadObject(stream) as List<string>;
-                }
-            }
-            else ReadIndex = new List<string>();
-            filename = "recent_index.dat";
-            if (App.store.FileExists(filename))
-            {
-                using (var stream = App.store.OpenFile(filename, FileMode.Open))
-                {
-                    RecentIndex = list_ser.ReadObject(stream) as List<string>;
-                }
-            }
-            else RecentIndex = new List<string>();
-            filename = "star_index.dat";
-            if (App.store.FileExists(filename))
-            {
-                using (var stream = App.store.OpenFile(filename, FileMode.Open))
-                {
-                    StarIndex = list_ser.ReadObject(stream) as List<string>;
-                }
-            }
-            else StarIndex = new List<string>();
-        }
-
-        public void SaveIndex(Views.IndexPage.PageStatus pageStatus, List<BookmarkItem> itemList = null)
-        {
+            itemHashSet.Clear();
+            itemList.Clear();
+            List<string> itemListIndex = null;
+            string filename = "";
             if (pageStatus == Views.IndexPage.PageStatus.UNREAD)
             {
-                if (itemList != null) UNReadIndex = itemList.Select(t => t.href).ToList();
-                string filename = "unread_index.dat";
-                using (var stream = App.store.OpenFile(filename, FileMode.Create))
-                {
-                    list_ser.WriteObject(stream, UNReadIndex);
-                }
-            }else
-            if (pageStatus == Views.IndexPage.PageStatus.READ)
+                filename = "unread_index.dat";
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.READ)
             {
-                if (itemList != null) ReadIndex = itemList.Select(t => t.href).ToList();
-                string filename = "read_index.dat";
-                using (var stream = App.store.OpenFile(filename, FileMode.Create))
-                {
-                    list_ser.WriteObject(stream, ReadIndex);
-                }
-            }else
-            if (pageStatus == Views.IndexPage.PageStatus.RECENT)
+                filename = "read_index.dat";
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.RECENT)
             {
-                if (itemList != null) RecentIndex = itemList.Select(t => t.href).ToList();
-                string filename = "recent_index.dat";
-                using (var stream = App.store.OpenFile(filename, FileMode.Create))
-                {
-                    list_ser.WriteObject(stream, RecentIndex);
-                }
-            }else
-            if (pageStatus == Views.IndexPage.PageStatus.STAR)
+                filename = "recent_index.dat";
+            }
+            else if (pageStatus == Views.IndexPage.PageStatus.STAR)
             {
-                if (itemList != null) StarIndex = itemList.Select(t => t.href).ToList();
-                string filename = "star_index.dat";
-                using (var stream = App.store.OpenFile(filename, FileMode.Create))
+                filename = "star_index.dat";
+            }
+            if (App.store.FileExists(filename))
+            {
+                using (var stream = App.store.OpenFile(filename, FileMode.Open))
                 {
-                    list_ser.WriteObject(stream, StarIndex);
+                    itemListIndex = list_ser.ReadObject(stream) as List<string>;
+                }
+            }
+            else itemListIndex = new List<string>();
+            if (itemListIndex != null)
+            {
+                for (int i = 0; i < itemListIndex.Count; i++)
+                {
+                    var item = App.localFileCache.GetBookmarkItem(itemListIndex[i]);
+                    if (item != null) { itemList.Add(item); itemHashSet.Add(itemListIndex[i]); }
+                    else Debug.WriteLine("Error in LoadIndex: item {0} from index {1} is null", itemListIndex[i], pageStatus);
+                    
                 }
             }
         }
 
-        public void ClearAllIndexes()
+        public void SaveIndex()
         {
-            UNReadIndex.Clear();
-            ReadIndex.Clear();
-            RecentIndex.Clear();
-            StarIndex.Clear();
+            string filename = "";
+            if (pageStatus == Views.IndexPage.PageStatus.UNREAD)
+            {               
+                filename = "unread_index.dat";
+            }else if (pageStatus == Views.IndexPage.PageStatus.READ)
+            {
+                filename = "read_index.dat";
+            }else if (pageStatus == Views.IndexPage.PageStatus.RECENT)
+            {
+                filename = "recent_index.dat";
+            }else if (pageStatus == Views.IndexPage.PageStatus.STAR)
+            {
+                filename = "star_index.dat";
+            }
+            if (String.IsNullOrEmpty(filename) == false)
+            {
+                using (var stream = App.store.OpenFile(filename, FileMode.Create))
+                {
+                    list_ser.WriteObject(stream, itemList.Select(t => t.href).ToList());
+                }
+            }
+        }
 
-            SaveIndex(Views.IndexPage.PageStatus.UNREAD);
-            SaveIndex(Views.IndexPage.PageStatus.READ);
-            SaveIndex(Views.IndexPage.PageStatus.RECENT);
-            SaveIndex(Views.IndexPage.PageStatus.STAR);
+        public void ClearIndex()
+        {
+            itemList.Clear();
+            itemHashSet.Clear();
+            SaveIndex();
+        }
+
+        public bool Remove(BookmarkItem item)
+        {
+            if (item == null) return false;
+            if (itemHashSet.Remove(item.href) == false) return false;
+            itemList.Remove(item);
+            SaveIndex();
+            return true;
+        }
+
+        public bool Insert(BookmarkItem item, int position)
+        {
+            if (item == null) return false;
+            if (itemHashSet.Add(item.href) == false) return false;
+            if (position < itemList.Count) itemList.Insert(position, item);
+            else itemList.Add(item);
+            SaveIndex();
+            return true;
         }
     }
 

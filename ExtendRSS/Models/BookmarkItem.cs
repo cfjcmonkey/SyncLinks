@@ -34,7 +34,7 @@ namespace SyncLinks.Models
         public string cacheHtml
         {
             get { return _cacheHtml; }
-            set { _cacheHtml = value;  NotifyPropertyChanged("cacheHtml"); }
+            set { if (_cacheHtml != value) { _cacheHtml = value; NotifyPropertyChanged("cacheHtml"); } }
         }
 
         private string _extended; //note
@@ -42,7 +42,7 @@ namespace SyncLinks.Models
         public string extended
         {
             get { return _extended; }
-            set { _extended = value; NotifyPropertyChanged("extended"); }
+            set { if (_extended != value) { _extended = value; NotifyPropertyChanged("extended"); } }
         }
 
         private bool _isUnReaded;
@@ -50,7 +50,7 @@ namespace SyncLinks.Models
         public bool isUnReaded
         { 
             get { return _isUnReaded;  }
-            set { _isUnReaded = value; NotifyPropertyChanged("isUnReaded"); } 
+            set { if (_isUnReaded != value) { _isUnReaded = value; NotifyPropertyChanged("isUnReaded"); } }
         }
 
         private bool _isStar;
@@ -58,7 +58,7 @@ namespace SyncLinks.Models
         public bool isStar
         {
             get { return _isStar; }
-            set { _isStar = value; NotifyPropertyChanged("isStar"); }
+            set { if (_isStar != value) { _isStar = value; NotifyPropertyChanged("isStar"); } }
         }
 
         public BookmarkItem(string href, string description, string hash, bool isUnReaded, bool isStar, string cacheHtml = "")
@@ -70,13 +70,13 @@ namespace SyncLinks.Models
             this.isStar = isStar;
             this.cacheHtml = cacheHtml;
 
-            this.PropertyChanged += App.pocketApi.BookmarkItem_PropertyChanged;
-            this.PropertyChanged += App.localFileCache.BookmarkItem_PropertyChanged;
+            //写在构造函数中不会触发，WHY?
+            //this.PropertyChanged += App.pocketApi.BookmarkItem_PropertyChanged;
+            //this.PropertyChanged += App.localFileCache.BookmarkItem_PropertyChanged;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             if (PropertyChanged != null)
@@ -93,12 +93,12 @@ namespace SyncLinks.Models
         public override bool Equals(object obj)
         {
             if (!(obj is BookmarkItem)) return false;
-            return this.hash == (obj as BookmarkItem).hash;
+            return this.href == (obj as BookmarkItem).href;
         }
 
         public override int GetHashCode()
         {
-            return this.hash.GetHashCode();
+            return this.href.GetHashCode();
         }
 
         #region IDisposable Support
@@ -115,8 +115,8 @@ namespace SyncLinks.Models
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                this.PropertyChanged -= App.pocketApi.BookmarkItem_PropertyChanged;
-                this.PropertyChanged -= App.localFileCache.BookmarkItem_PropertyChanged;
+                //this.PropertyChanged -= App.pocketApi.BookmarkItem_PropertyChanged;
+                //this.PropertyChanged -= App.localFileCache.BookmarkItem_PropertyChanged;
 
                 disposedValue = true;
             }

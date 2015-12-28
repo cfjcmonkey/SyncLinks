@@ -18,20 +18,25 @@ namespace SyncLinks.Views
     public partial class LinkListControl : UserControl
     {
         IndexPage parent; //用systemstray...代替
-        List<BookmarkItem> itemList;
-        HashSet<string> itemHashSet;
-        int total { get { return itemList.Count; } }
-
+        ObservableCollection<BookmarkItem> itemList;
+        int total
+        {
+            get
+            {
+                return itemList.Count;
+            }
+        }
         public IndexPage.PageStatus StatusTag { get; set; }
+        bool IsUpdateOnline { get; set; }
+
 
         public LinkListControl(IndexPage page)
         {
             InitializeComponent();
 
             parent = page;
-            itemList = new List<BookmarkItem>();
-            itemHashSet = new HashSet<string>();
-            App.localFileCache.ListIndexChanged += LocalFileCache_ListIndexChanged;
+            IsUpdateOnline = true;
+            //App.localFileCache.ListIndexChanged += LocalFileCache_ListIndexChanged;
             //App.pocketApi.ItemStatusChanged += PocketApi_ItemStatusChanged;
             
             ////////////////////////TEST
@@ -44,20 +49,27 @@ namespace SyncLinks.Views
 
         ~LinkListControl()
         {
-            App.localFileCache.ListIndexChanged -= LocalFileCache_ListIndexChanged;
+            //App.localFileCache.ListIndexChanged -= LocalFileCache_ListIndexChanged;
             //App.pocketApi.ItemStatusChanged -= PocketApi_ItemStatusChanged;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+            itemList = App.localFileCache.LoadItemList(StatusTag);
+            ResultListControl.ItemsSource = itemList;
+
             UpdateData();
         }
 
-        public void UpdateData()
+        public void UpdateData(bool isForce = false)
         {
-            OfflineLoad(true);
-            if (total == 0) OnlineLoadUI(0, 10);
-            else OnlineLoadUI(0, -1); //TEST
+            IsUpdateOnline |= isForce;
+            //OfflineLoad(true);
+            if (IsUpdateOnline)
+            {
+                if (total == 0) OnlineLoadUI(0, 10);
+                else OnlineLoadUI(0, -1); //TEST
+            }
         }
 
         public void LocalRefresh()
@@ -65,22 +77,22 @@ namespace SyncLinks.Views
             OfflineLoad(true);
         }
 
-        private void UpdateUI()
-        {
-            ResultListControl.ItemsSource = null;
-            ResultListControl.ItemsSource = itemList;
-        }
+        //private void UpdateUI()
+        //{
+        //    ResultListControl.ItemsSource = null;
+        //    ResultListControl.ItemsSource = itemList;
+        //}
 
-        private void LocalFileCache_ListIndexChanged(IndexPage.PageStatus pageStatus)
-        {
-            Dispatcher.BeginInvoke(() => {
-                //判定当前是否显示在页面上
-                if (parent.IsSelected(StatusTag))
-                {
-                    if (pageStatus == StatusTag) OfflineLoad(true);
-                }
-            });
-        }
+        //private void LocalFileCache_ListIndexChanged(IndexPage.PageStatus pageStatus)
+        //{
+        //    Dispatcher.BeginInvoke(() => {
+        //        //判定当前是否显示在页面上
+        //        if (parent.IsSelected(StatusTag))
+        //        {
+        //            if (pageStatus == StatusTag) OfflineLoad(true);
+        //        }
+        //    });
+        //}
 
         //private void PocketApi_ItemStatusChanged(object sender, BookmarkItem item, IndexPage.PageStatus pageStatus)
         //{
@@ -99,10 +111,9 @@ namespace SyncLinks.Views
             parent.proIndicator.IsVisible = true;
             parent.proIndicator.Text = "正在加载书签...";
 
-            itemList.Clear();
-            itemList.AddRange(App.localFileCache.LoadBunchItemRecords(StatusTag));
+            App.localFileCache.ReLoadItemList(StatusTag);
 
-            if (isUpdateUI) UpdateUI();
+            //if (isUpdateUI) UpdateUI();
             parent.proIndicator.IsVisible = false;
         }
 
@@ -140,6 +151,7 @@ namespace SyncLinks.Views
                     }
                     else
                     {
+                        IsUpdateOnline = false;
                         Dispatcher.BeginInvoke(() =>
                         {
                             parent.proIndicator.IsVisible = false;
@@ -147,6 +159,8 @@ namespace SyncLinks.Views
                     }
                 }
                 else if (t.Status == TaskStatus.Faulted)
+                {
+                    IsUpdateOnline = false;
                     Dispatcher.BeginInvoke(() =>
                     {
                         if (App.pocketApi.IsSync)
@@ -159,13 +173,15 @@ namespace SyncLinks.Views
                                     parent.NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
                                 }
                             }
-                            else {
+                            else
+                            {
                                 MessageBox.Show("请求错误: " + t.Exception.InnerException.Message + "\n" + t.Exception.InnerException.StackTrace);
                             }
                             App.pocketApi.IsSync = false;
                         }
                         parent.proIndicator.IsVisible = false;
                     });
+                }
             });
         }
 
@@ -205,7 +221,7 @@ namespace SyncLinks.Views
             BookmarkItem sitem = (sender as MenuItem).DataContext as BookmarkItem;
             App.localFileCache.DeleteBookmark(sitem);
             App.pocketApi.DeleteItem(sitem);
-            UpdateUI();
+            //UpdateUI();
         }
 
         /// <summary>

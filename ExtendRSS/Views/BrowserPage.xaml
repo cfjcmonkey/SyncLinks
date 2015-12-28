@@ -40,7 +40,8 @@
         <toolkit:GestureListener Flick="GestureListener_Flick"/>
     </toolkit:GestureService.GestureListener>
     <Grid>
-        <phone:WebBrowser x:Name="webBrowser" HorizontalAlignment="Left" VerticalAlignment="Top" Height="696" Width="480" Navigated="webBrowser_Navigated" Navigating="webBrowser_Navigating"/>
+        <phone:WebBrowser x:Name="webBrowser" HorizontalAlignment="Left" VerticalAlignment="Top" Height="736" Width="480" IsScriptEnabled="False"
+                          Navigated="webBrowser_Navigated" Navigating="webBrowser_Navigating"/>
 
         <Popup Name="AddBookmark_Popup" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Grid x:Name="TitleContent" HorizontalAlignment="Center" Margin="0,-250,0,0" Height="500" VerticalAlignment="Center">
@@ -74,14 +75,14 @@
         </Popup>
     </Grid>
     <phone:PhoneApplicationPage.ApplicationBar>
-        <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Default">
+        <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Mode="Minimized">
             <shell:ApplicationBarIconButton x:Name="Btn_PrePage" Text="前一页" IconUri="/Assets/back.png" Click="Btn_GoBack_Click" />
-            <shell:ApplicationBarIconButton x:Name="Btn_Add" Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click" />
+            <shell:ApplicationBarIconButton x:Name="Btn_Add" Text="填加书签" IconUri="/Assets/add.png" Click="Btn_AddBookmark_Click"  />
             <shell:ApplicationBarIconButton Text="刷新" IconUri="/Assets/sync.png" Click="Btn_Fresh_Click" />
-            <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" /> 
+            <shell:ApplicationBarIconButton x:Name="Btn_NextPage" Text="后一页" IconUri="/Assets/next.png" Click="Btn_GoForward_Click" />
             <shell:ApplicationBar.MenuItems>
-                <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="谷歌转码/百度转码/原网页" Click="Btn_GoogleEncode_Click" />
-                <shell:ApplicationBarMenuItem x:Name="AppMenu_IE10" Text="用IE打开" Click="AppMenu_IE10_Click"/>                
+                <shell:ApplicationBarMenuItem x:Name="AppMenu_GoogleTrans" Text="谷歌转码/百度转码/原网页" Click="Btn_PageEncode_Click" />
+                <shell:ApplicationBarMenuItem x:Name="AppMenu_IE10" Text="用IE打开" Click="AppMenu_IE10_Click"/>
             </shell:ApplicationBar.MenuItems>
         </shell:ApplicationBar>
     </phone:PhoneApplicationPage.ApplicationBar>

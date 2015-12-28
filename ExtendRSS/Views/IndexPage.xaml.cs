@@ -21,21 +21,21 @@ namespace SyncLinks.Views
         public IndexPage()
         {
             InitializeComponent();
-            this.Loaded += IndexPage_Loaded;
+            //this.Loaded += IndexPage_Loaded;
             proIndicator = new ProgressIndicator()
             {
                 IsIndeterminate = true,
                 IsVisible = false
             };
             SystemTray.SetProgressIndicator(this, proIndicator);
-
+            AddBookmark_Popup.IsOpen = false;
 //            Login_Content.Width = Application.Current.Host.Content.ActualWidth;
         }
 
-        private void IndexPage_Loaded(object sender, RoutedEventArgs e)
-        {
+        //private void IndexPage_Loaded(object sender, RoutedEventArgs e)
+        //{
             
-        }
+        //}
 
         private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -54,6 +54,65 @@ namespace SyncLinks.Views
             else return false;
         }
 
+        void UpdatePage(PivotItem item, bool isForce = false)
+        {
+            if (item == UnReadedViewer)
+            {
+                if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).UpdateData(isForce);
+                else UnReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.UNREAD };
+            }
+            else if (item == ReadedViewer)
+            {
+                if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).UpdateData(isForce);
+                else ReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.READ };
+            }
+            else if (item == RecentViewer)
+            {
+                if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
+                else RecentViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.RECENT };
+            }
+            else if (item == StarViewer)
+            {
+                if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).UpdateData(isForce);
+                else StarViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.STAR };
+            }
+        }
+
+        /// <summary>
+        /// 点击设置按钮，转到设置页面
+        /// </summary>
+        private void AppBarIconButton_Set_Click(object sender, EventArgs e)
+        {
+            NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
+        }
+
+        /// <summary>
+        /// 点击刷新按钮，更新当前页面，有网络连接
+        /// why not use refresh instead of new object?
+        /// </summary>
+        private void AppBarIconButton_Refresh_Click(object sender, EventArgs e)
+        {
+            UpdatePage(PivotControl.SelectedItem as PivotItem, true);
+        }
+
+        private void AppBarIconButton_Add_Click(object sender, EventArgs e)
+        {
+            AddBookmark_Popup.IsOpen = true;
+        }
+
+        private void Btn_OK_Click(object sender, RoutedEventArgs e)
+        {
+            var item = App.localFileCache.AddBookmarkItem(Txt_URL.Text, Txt_URL.Text);
+            App.pocketApi.AddNewItem(item);
+            MessageBox.Show("添加完成.");
+            AddBookmark_Popup.IsOpen = false;
+        }
+
+        private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            AddBookmark_Popup.IsOpen = false;
+        }
+
         ///// <summary>
         ///// 登陆按钮的响应，登陆成功后显示最近的书签
         ///// </summary>
@@ -68,57 +127,17 @@ namespace SyncLinks.Views
         //    Login_Popup.IsOpen = false;
         //}
 
-        /// <summary>
-        /// 设置按钮的响应,弹出登录框
-        /// </summary>
-        private void AppBarIconButton_Set_Click(object sender, EventArgs e)
-        {
-            NavigationService.Navigate(new Uri("/Views/ConfigPage.xaml", UriKind.Relative));
-        }
-
-        /// <summary>
-        /// 重载回退键,若登陆框打开，优先关闭登陆框.
-        /// </summary>
-        protected override void OnBackKeyPress(System.ComponentModel.CancelEventArgs e)
-        {
-            //if (Login_Popup.IsOpen)
-            //{
-            //    Login_Popup.IsOpen = false;
-            //    e.Cancel = true;
-            //}
-        }
-
-        /// <summary>
-        /// why not use refresh instead of new object?
-        /// </summary>
-        private void AppBarIconButton_Refresh_Click(object sender, EventArgs e)
-        {
-            UpdatePage(PivotControl.SelectedItem as PivotItem);
-        }
-
-        void UpdatePage(PivotItem item)
-        {
-            if (item == UnReadedViewer)
-            {
-                if (UnReadedViewer.Content != null) (UnReadedViewer.Content as LinkListControl).UpdateData();
-                else UnReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.UNREAD };
-            }
-            else if (item == ReadedViewer)
-            {
-                if (ReadedViewer.Content != null) (ReadedViewer.Content as LinkListControl).UpdateData();
-                else ReadedViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.READ };
-            }
-            else if (item == RecentViewer)
-            {
-                if (RecentViewer.Content != null) (RecentViewer.Content as LinkListControl).LocalRefresh();
-                else RecentViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.RECENT };
-            }
-            else if (item == StarViewer)
-            {
-                if (StarViewer.Content != null) (StarViewer.Content as LinkListControl).UpdateData();
-                else StarViewer.Content = new LinkListControl(this) { StatusTag = PageStatus.STAR };
-            }
-        }
+        ///// <summary>
+        ///// 重载回退键,若登陆框打开，优先关闭登陆框.
+        ///// </summary>
+        //protected override void OnBackKeyPress(System.ComponentModel.CancelEventArgs e)
+        //{
+        //    //if (Login_Popup.IsOpen)
+        //    //{
+        //    //    Login_Popup.IsOpen = false;
+        //    //    e.Cancel = true;
+        //    //}
+        //}
 
     }
 }

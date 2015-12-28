@@ -87,7 +87,6 @@ namespace SyncLinks
         // 此代码在停用应用程序时不执行
         private void Application_Closing(object sender, ClosingEventArgs e)
         {
-            localFileCache.SaveAllIndex(); //
         }
 
         // 导航失败时执行的代码
